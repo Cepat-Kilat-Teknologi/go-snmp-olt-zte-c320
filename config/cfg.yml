@@ -1,0 +1,7 @@
+SnmpCfg:
+  ip_olt : 192.168.213.174
+  community : publicro
+
+ServerCfg:
+  host : localhost
+  port : 8080
