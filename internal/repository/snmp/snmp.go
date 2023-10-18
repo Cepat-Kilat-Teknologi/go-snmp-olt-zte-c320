@@ -4,7 +4,7 @@ import (
 	"github.com/gosnmp/gosnmp"
 )
 
-type SNMPRepository interface {
+type RepositorySNMP interface {
 	GetSnmp() *gosnmp.GoSNMP
 	Connect() error
 	GetIpOlt() (string, error)
@@ -15,7 +15,7 @@ type snmpRepository struct {
 	snmp *gosnmp.GoSNMP
 }
 
-func NewPonRepository(snmp *gosnmp.GoSNMP) SNMPRepository {
+func NewPonRepository(snmp *gosnmp.GoSNMP) RepositorySNMP {
 	return &snmpRepository{
 		snmp: snmp,
 	}
