@@ -1,0 +1,128 @@
+version: '3'
+
+vars:
+  EXE: sumitroajiprabowo/e-asmara-backend{{exeExt}}
+
+tasks:
+  default:
+    cmds:
+      - task: dev
+
+  dev:
+    desc: Start the local environment
+    cmds:
+      - air -c .air.toml
+
+  go-install:
+    cmds:
+      - go install {{.REPO}}
+
+  dl-deps:
+    desc: Install tools required to run/build this app
+    cmds:
+      - task: go-install
+        vars: { REPO: github.com/swaggo/swag/cmd/swag@latest }
+      - task: go-install
+        vars: { REPO: github.com/cosmtrek/air@latest }
+      - task: tidy
+
+  init:
+    desc: Initialize the environment
+    deps: [ dl-deps ]
+
+  tidy:
+    desc: Clean up dependencies
+    cmds:
+      - go mod tidy
+
+  swag:
+    desc: Generate swagger docs
+    cmds:
+      #      - swag init -g internal/server/server.go -o docs
+      - swag init --parseDependency --parseInternal -g internal/server/server.go -o docs
+
+
+  app-build:
+    desc: Build the app binary
+    #    deps: [ test ]
+    cmds:
+      - CGO_ENABLED=0 go build -o {{.EXE}} ./cmd/api/main.go
+    sources:
+      - ./**/*.go
+    generates:
+      - ./{{.EXE}}
+
+  build-image:
+    desc: Build the docker image
+    cmds:
+      - docker build -t {{.EXE}} .
+
+  push-image:
+    desc: Push docker image with tag latest with multi-arch support (linux/amd64, linux/arm64) to docker hub
+    cmds:
+      - docker buildx build --push --platform linux/amd64,linux/arm64,linux/arm/v7 -t {{.EXE}}:latest -f Dockerfile .
+
+  docker-run:
+    desc: Run docker image with tag latest
+    cmds:
+      - docker run -d -p 8080:8080 --name e-asmara-backend-app {{.EXE}}:latest
+
+  docker-stop:
+    desc: Stop docker image with tag latest
+    cmds:
+      - docker stop e-asmara-backend-app
+
+  docker-remove:
+    desc: Remove docker image with tag latest
+    cmds:
+      - docker rm e-asmara-backend-app
+
+  docker-dev-down:
+    desc: Stop and remove the local development docker containers
+    cmds:
+      - docker-compose -f docker-compose-dev.yml down
+
+  docker-dev-up:
+    desc: Start the local development docker containers in the background
+    cmds:
+      - docker-compose -f docker-compose-dev.yml up -d
+
+  docker-dev-restart:
+    desc: Restart the local development docker containers
+    cmds:
+      - docker-compose -f docker-compose-dev.yml down
+      - docker-compose -f docker-compose-dev.yml up -d
+
+  docker-dev-rebuild:
+    desc: Rebuild the local development docker containers
+    cmds:
+      - docker-compose -f docker-compose-dev.yml down
+      - docker-compose -f docker-compose-dev.yml up -d --build
+
+
+  up:
+    desc: Start the docker containers in the background
+    cmds:
+      - docker-compose up -d
+
+  up-rebuild:
+    desc: Rebuild the docker containers
+    cmds:
+      - docker-compose up -d --build
+
+  down:
+    desc: Stop and remove the docker containers
+    cmds:
+      - docker-compose down
+
+  restart:
+    desc: Restart the docker containers
+    cmds:
+      - task: down
+      - task: up
+
+  rebuild:
+    desc: Rebuild the docker image and up with detached mode
+    cmds:
+      - task: down
+      - task: up-rebuild
