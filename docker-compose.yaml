@@ -1,0 +1,12 @@
+services:
+  app:
+    restart: always
+    container_name: go-snmp-olt
+    build:
+      context: .
+      target: dev
+    command: air -c .air.toml
+    volumes:
+      - ./:/app
+    ports:
+      - 8080:8080
