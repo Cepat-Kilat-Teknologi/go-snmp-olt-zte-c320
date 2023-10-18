@@ -109,7 +109,4 @@ func ExtractAndGetStatus(oidValue interface{}) string {
 	default:
 		return "Unknown"
 	}
-
-	// Return the integer value
-	return strconv.Itoa(intValue)
 }
