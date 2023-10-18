@@ -3,3 +3,6 @@ GET localhost:8080/pon
 
 ### List All ONU by OLT PON
 GET localhost:8080/pon/7
+
+### List All ONU by GTGO and OLT PON
+GET localhost:8080/gtgo/2/pon/7
