@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/sumitroajiprabowo/go-snmp-olt-c320/config"
+	"github.com/sumitroajiprabowo/go-snmp-olt-c320/internal/handler"
+	snmp2 "github.com/sumitroajiprabowo/go-snmp-olt-c320/internal/repository/snmp"
+	"github.com/sumitroajiprabowo/go-snmp-olt-c320/internal/usecase"
 	"github.com/sumitroajiprabowo/go-snmp-olt-c320/pkg/snmp"
 	"github.com/sumitroajiprabowo/go-snmp-olt-c320/pkg/utils"
 	"log"
@@ -18,27 +21,37 @@ type App struct {
 }
 
 func New() *App {
-	return &App{
-		router: loadRoutes(),
-	}
+	return &App{}
 }
 
 func (a *App) Start(ctx context.Context) error {
 	configPath := utils.GetConfigPath(os.Getenv("config"))
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		return fmt.Errorf("failed to load config: %w", err)
 	}
 
 	snmpConn, err := snmp.SetupSnmpConnection(cfg)
 	if err != nil {
-		log.Fatalf("Failed to set up SNMP connection: %v", err)
+		return fmt.Errorf("failed to set up SNMP connection: %w", err)
 	}
 	defer func() {
 		if err := snmpConn.Conn.Close(); err != nil {
 			log.Printf("Failed to close SNMP connection: %v", err)
 		}
 	}()
+
+	// Initialize repository
+	snmpRepo := snmp2.NewPonRepository(snmpConn)
+
+	// Initialize usecase
+	ponUsecase := usecase.NewPonUsecase(snmpRepo, cfg)
+
+	// Initialize handler
+	ponHandler := handler.NewPonHandler(ponUsecase)
+
+	// Initialize router
+	a.router = loadRoutes(ponHandler)
 
 	fmt.Printf("Starting server at %s:%d\n", cfg.ServerCfg.Host, cfg.ServerCfg.Port)
 
@@ -53,7 +66,7 @@ func (a *App) Start(ctx context.Context) error {
 	go func() {
 		err = server.ListenAndServe()
 		if err != nil && !errors.Is(http.ErrServerClosed, err) {
-			ch <- fmt.Errorf("Failed to start server: %v", err)
+			ch <- fmt.Errorf("failed to start server: %v", err)
 		}
 		close(ch)
 	}()
@@ -74,7 +87,6 @@ func (a *App) Start(ctx context.Context) error {
 
 func InitServerHTTP() {
 	server := New()
-
 	err := server.Start(context.TODO())
 	if err != nil {
 		log.Println("Failed to start app:", err)
