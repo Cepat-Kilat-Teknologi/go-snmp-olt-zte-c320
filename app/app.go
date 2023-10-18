@@ -45,13 +45,13 @@ func (a *App) Start(ctx context.Context) error {
 	snmpRepo := snmp2.NewPonRepository(snmpConn)
 
 	// Initialize usecase
-	ponUsecase := usecase.NewPonUsecase(snmpRepo, cfg)
+	onuUsecase := usecase.NewOnuUsecase(snmpRepo, cfg)
 
 	// Initialize handler
-	ponHandler := handler.NewPonHandler(ponUsecase)
+	onuHandler := handler.NewOnuHandler(onuUsecase)
 
 	// Initialize router
-	a.router = loadRoutes(ponHandler)
+	a.router = loadRoutes(onuHandler)
 
 	fmt.Printf("Starting server at %s:%d\n", cfg.ServerCfg.Host, cfg.ServerCfg.Port)
 
@@ -83,12 +83,4 @@ func (a *App) Start(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func InitServerHTTP() {
-	server := New()
-	err := server.Start(context.TODO())
-	if err != nil {
-		log.Println("Failed to start app:", err)
-	}
 }
