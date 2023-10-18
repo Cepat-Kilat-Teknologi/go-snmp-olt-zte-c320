@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/sumitroajiprabowo/go-snmp-olt-c320/internal/usecase"
-	"github.com/sumitroajiprabowo/go-snmp-olt-c320/pkg/utils"
+	"github.com/megadata-dev/go-snmp-olt-c320/internal/usecase"
+	"github.com/megadata-dev/go-snmp-olt-c320/pkg/utils"
 	"net/http"
 	"strconv"
 )

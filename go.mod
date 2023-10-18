@@ -1,4 +1,4 @@
-module github.com/sumitroajiprabowo/go-snmp-olt-c320
+module github.com/megadata-dev/go-snmp-olt-c320
 
 go 1.19
 

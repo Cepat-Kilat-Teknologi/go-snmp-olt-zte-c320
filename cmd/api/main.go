@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/sumitroajiprabowo/go-snmp-olt-c320/app"
+	"github.com/megadata-dev/go-snmp-olt-c320/app"
 	"log"
 )
 

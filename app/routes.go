@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/sumitroajiprabowo/go-snmp-olt-c320/internal/handler"
+	"github.com/megadata-dev/go-snmp-olt-c320/internal/handler"
 )
 
 func loadRoutes(onuHandler *handler.OnuHandler) *chi.Mux {

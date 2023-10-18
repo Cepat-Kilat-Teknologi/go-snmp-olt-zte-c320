@@ -3,7 +3,7 @@ package snmp
 import (
 	"fmt"
 	"github.com/gosnmp/gosnmp"
-	"github.com/sumitroajiprabowo/go-snmp-olt-c320/config"
+	"github.com/megadata-dev/go-snmp-olt-c320/config"
 	"time"
 )
 
