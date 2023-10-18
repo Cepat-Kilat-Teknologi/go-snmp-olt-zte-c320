@@ -1,0 +1,5 @@
+### List All ONU
+GET localhost:8080/pon
+
+### List All ONU by OLT PON
+GET localhost:8080/pon/7
