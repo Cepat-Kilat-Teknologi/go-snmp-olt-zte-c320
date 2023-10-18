@@ -16,7 +16,6 @@ import (
 
 type OnuUseCase interface {
 	GetAllONUInfo(ctx context.Context) ([]model.ONUInfo, error)
-	GetByPonID(ctx context.Context, ponID int) ([]model.ONUInformation, error)
 	GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int) ([]model.ONUInfoPerGTGO, error)
 }
 
@@ -83,6 +82,67 @@ func (u *onuUsecase) GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int)
 
 	switch gtGoID {
 
+	case 0:
+		switch ponID {
+		case 1:
+			baseOID = u.cfg.OltCfg.BaseOID1
+			onuIDNameOID = u.cfg.Board1Pon1.OnuIDNameOID
+			onuTypeOID = u.cfg.Board1Pon1.OnuTypeOID
+			onuSerialNumberOID = u.cfg.Board1Pon1.OnuSerialNumberOID
+			onuRxPowerOID = u.cfg.Board1Pon1.OnuRxPowerOID
+			onuStatusOID = u.cfg.Board1Pon1.OnuStatusOID
+		case 2:
+			baseOID = u.cfg.OltCfg.BaseOID1
+			onuIDNameOID = u.cfg.Board1Pon2.OnuIDNameOID
+			onuTypeOID = u.cfg.Board1Pon2.OnuTypeOID
+			onuSerialNumberOID = u.cfg.Board1Pon2.OnuSerialNumberOID
+			onuRxPowerOID = u.cfg.Board1Pon2.OnuRxPowerOID
+			onuStatusOID = u.cfg.Board1Pon2.OnuStatusOID
+		case 3:
+			baseOID = u.cfg.OltCfg.BaseOID1
+			onuIDNameOID = u.cfg.Board1Pon3.OnuIDNameOID
+			onuTypeOID = u.cfg.Board1Pon3.OnuTypeOID
+			onuSerialNumberOID = u.cfg.Board1Pon3.OnuSerialNumberOID
+			onuRxPowerOID = u.cfg.Board1Pon3.OnuRxPowerOID
+			onuStatusOID = u.cfg.Board1Pon3.OnuStatusOID
+		case 4:
+			baseOID = u.cfg.OltCfg.BaseOID1
+			onuIDNameOID = u.cfg.Board1Pon4.OnuIDNameOID
+			onuTypeOID = u.cfg.Board1Pon4.OnuTypeOID
+			onuSerialNumberOID = u.cfg.Board1Pon4.OnuSerialNumberOID
+			onuRxPowerOID = u.cfg.Board1Pon4.OnuRxPowerOID
+			onuStatusOID = u.cfg.Board1Pon4.OnuStatusOID
+		case 5:
+			baseOID = u.cfg.OltCfg.BaseOID1
+			onuIDNameOID = u.cfg.Board1Pon5.OnuIDNameOID
+			onuTypeOID = u.cfg.Board1Pon5.OnuTypeOID
+			onuSerialNumberOID = u.cfg.Board1Pon5.OnuSerialNumberOID
+			onuRxPowerOID = u.cfg.Board1Pon5.OnuRxPowerOID
+			onuStatusOID = u.cfg.Board1Pon5.OnuStatusOID
+		case 6:
+			baseOID = u.cfg.OltCfg.BaseOID1
+			onuIDNameOID = u.cfg.Board1Pon6.OnuIDNameOID
+			onuTypeOID = u.cfg.Board1Pon6.OnuTypeOID
+			onuSerialNumberOID = u.cfg.Board1Pon6.OnuSerialNumberOID
+			onuRxPowerOID = u.cfg.Board1Pon6.OnuRxPowerOID
+			onuStatusOID = u.cfg.Board1Pon6.OnuStatusOID
+		case 7:
+			baseOID = u.cfg.OltCfg.BaseOID1
+			onuIDNameOID = u.cfg.Board1Pon7.OnuIDNameOID
+			onuTypeOID = u.cfg.Board1Pon7.OnuTypeOID
+			onuSerialNumberOID = u.cfg.Board1Pon7.OnuSerialNumberOID
+			onuRxPowerOID = u.cfg.Board1Pon7.OnuRxPowerOID
+			onuStatusOID = u.cfg.Board1Pon7.OnuStatusOID
+		case 8:
+			baseOID = u.cfg.OltCfg.BaseOID1
+			onuIDNameOID = u.cfg.Board1Pon8.OnuIDNameOID
+			onuTypeOID = u.cfg.Board1Pon8.OnuTypeOID
+			onuSerialNumberOID = u.cfg.Board1Pon8.OnuSerialNumberOID
+			onuRxPowerOID = u.cfg.Board1Pon8.OnuRxPowerOID
+			onuStatusOID = u.cfg.Board1Pon8.OnuStatusOID
+		default:
+			return nil, errors.New("invalid PON ID")
+		}
 	case 1:
 		switch ponID {
 		case 1:
@@ -142,79 +202,10 @@ func (u *onuUsecase) GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int)
 			onuRxPowerOID = u.cfg.Board1Pon8.OnuRxPowerOID
 			onuStatusOID = u.cfg.Board1Pon8.OnuStatusOID
 		default:
-			baseOID = u.cfg.OltCfg.BaseOID1
-			onuIDNameOID = u.cfg.Board1Pon1.OnuIDNameOID
-			onuTypeOID = u.cfg.Board1Pon1.OnuTypeOID
-			onuSerialNumberOID = u.cfg.Board1Pon1.OnuSerialNumberOID
-			onuRxPowerOID = u.cfg.Board1Pon1.OnuRxPowerOID
-			onuStatusOID = u.cfg.Board1Pon1.OnuStatusOID
+			return nil, errors.New("invalid PON ID")
 		}
-	case 2:
-		switch ponID {
-		case 1:
-			baseOID = u.cfg.OltCfg.BaseOID1
-			onuIDNameOID = u.cfg.Board1Pon1.OnuIDNameOID
-			onuTypeOID = u.cfg.Board1Pon1.OnuTypeOID
-			onuSerialNumberOID = u.cfg.Board1Pon1.OnuSerialNumberOID
-			onuRxPowerOID = u.cfg.Board1Pon1.OnuRxPowerOID
-			onuStatusOID = u.cfg.Board1Pon1.OnuStatusOID
-		case 2:
-			baseOID = u.cfg.OltCfg.BaseOID1
-			onuIDNameOID = u.cfg.Board1Pon2.OnuIDNameOID
-			onuTypeOID = u.cfg.Board1Pon2.OnuTypeOID
-			onuSerialNumberOID = u.cfg.Board1Pon2.OnuSerialNumberOID
-			onuRxPowerOID = u.cfg.Board1Pon2.OnuRxPowerOID
-			onuStatusOID = u.cfg.Board1Pon2.OnuStatusOID
-		case 3:
-			baseOID = u.cfg.OltCfg.BaseOID1
-			onuIDNameOID = u.cfg.Board1Pon3.OnuIDNameOID
-			onuTypeOID = u.cfg.Board1Pon3.OnuTypeOID
-			onuSerialNumberOID = u.cfg.Board1Pon3.OnuSerialNumberOID
-			onuRxPowerOID = u.cfg.Board1Pon3.OnuRxPowerOID
-			onuStatusOID = u.cfg.Board1Pon3.OnuStatusOID
-		case 4:
-			baseOID = u.cfg.OltCfg.BaseOID1
-			onuIDNameOID = u.cfg.Board1Pon4.OnuIDNameOID
-			onuTypeOID = u.cfg.Board1Pon4.OnuTypeOID
-			onuSerialNumberOID = u.cfg.Board1Pon4.OnuSerialNumberOID
-			onuRxPowerOID = u.cfg.Board1Pon4.OnuRxPowerOID
-			onuStatusOID = u.cfg.Board1Pon4.OnuStatusOID
-		case 5:
-			baseOID = u.cfg.OltCfg.BaseOID1
-			onuIDNameOID = u.cfg.Board1Pon5.OnuIDNameOID
-			onuTypeOID = u.cfg.Board1Pon5.OnuTypeOID
-			onuSerialNumberOID = u.cfg.Board1Pon5.OnuSerialNumberOID
-			onuRxPowerOID = u.cfg.Board1Pon5.OnuRxPowerOID
-			onuStatusOID = u.cfg.Board1Pon5.OnuStatusOID
-		case 6:
-			baseOID = u.cfg.OltCfg.BaseOID1
-			onuIDNameOID = u.cfg.Board1Pon6.OnuIDNameOID
-			onuTypeOID = u.cfg.Board1Pon6.OnuTypeOID
-			onuSerialNumberOID = u.cfg.Board1Pon6.OnuSerialNumberOID
-			onuRxPowerOID = u.cfg.Board1Pon6.OnuRxPowerOID
-			onuStatusOID = u.cfg.Board1Pon6.OnuStatusOID
-		case 7:
-			baseOID = u.cfg.OltCfg.BaseOID1
-			onuIDNameOID = u.cfg.Board1Pon7.OnuIDNameOID
-			onuTypeOID = u.cfg.Board1Pon7.OnuTypeOID
-			onuSerialNumberOID = u.cfg.Board1Pon7.OnuSerialNumberOID
-			onuRxPowerOID = u.cfg.Board1Pon7.OnuRxPowerOID
-			onuStatusOID = u.cfg.Board1Pon7.OnuStatusOID
-		case 8:
-			baseOID = u.cfg.OltCfg.BaseOID1
-			onuIDNameOID = u.cfg.Board1Pon8.OnuIDNameOID
-			onuTypeOID = u.cfg.Board1Pon8.OnuTypeOID
-			onuSerialNumberOID = u.cfg.Board1Pon8.OnuSerialNumberOID
-			onuRxPowerOID = u.cfg.Board1Pon8.OnuRxPowerOID
-			onuStatusOID = u.cfg.Board1Pon8.OnuStatusOID
-		default:
-			baseOID = u.cfg.OltCfg.BaseOID1
-			onuIDNameOID = u.cfg.Board1Pon1.OnuIDNameOID
-			onuTypeOID = u.cfg.Board1Pon1.OnuTypeOID
-			onuSerialNumberOID = u.cfg.Board1Pon1.OnuSerialNumberOID
-			onuRxPowerOID = u.cfg.Board1Pon1.OnuRxPowerOID
-			onuStatusOID = u.cfg.Board1Pon1.OnuStatusOID
-		}
+	default:
+		return nil, errors.New("invalid GTGO ID")
 	}
 
 	// Menggunakan SNMP Walk dengan timeout
@@ -238,27 +229,27 @@ func (u *onuUsecase) GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int)
 		onuInfo := model.ONUInfoPerGTGO{
 			GTGO: gtGoID,
 			PON:  ponID,
-			ID:   utils.ExtractONUID(pdu.Name),
+			ID:   utils.ExtractIDOnuID(pdu.Name),
 			Name: utils.ExtractName(pdu.Value),
 		}
 
 		// Lakukan pengolahan berdasarkan data SNMP yang tersimpan
-		onuType, err := u.getONUType(ctx, onuTypeOID, onuInfo.ID)
+		onuType, err := u.getONUType(ctx, onuTypeOID, strconv.Itoa(onuInfo.ID))
 		if err == nil {
 			onuInfo.OnuType = onuType
 		}
 
-		onuSerialNumber, err := u.getSerialNumber(ctx, onuSerialNumberOID, onuInfo.ID)
+		onuSerialNumber, err := u.getSerialNumber(ctx, onuSerialNumberOID, strconv.Itoa(onuInfo.ID))
 		if err == nil {
 			onuInfo.SerialNumber = onuSerialNumber
 		}
 
-		onuRXPower, err := u.getRxPower(ctx, onuRxPowerOID, onuInfo.ID)
+		onuRXPower, err := u.getRxPower(ctx, onuRxPowerOID, strconv.Itoa(onuInfo.ID))
 		if err == nil {
 			onuInfo.RXPower = onuRXPower
 		}
 
-		onuStatus, err := u.getStatus(ctx, onuStatusOID, onuInfo.ID)
+		onuStatus, err := u.getStatus(ctx, onuStatusOID, strconv.Itoa(onuInfo.ID))
 		if err == nil {
 			onuInfo.Status = onuStatus
 		}
@@ -268,152 +259,8 @@ func (u *onuUsecase) GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int)
 
 	// Urutkan berdasarkan ID
 	sort.Slice(onuInformationList, func(i, j int) bool {
-		onuID1, _ := strconv.Atoi(onuInformationList[i].ID)
-		onuID2, _ := strconv.Atoi(onuInformationList[j].ID)
-		return onuID1 < onuID2
+		return onuInformationList[i].ID < onuInformationList[j].ID
 	})
-	return onuInformationList, nil
-}
-
-func (u *onuUsecase) GetByPonID(ctx context.Context, ponID int) ([]model.ONUInformation, error) {
-	// Tentukan timeout menggunakan context
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
-	defer cancel()
-
-	var baseOID string
-	var onuIDNameOID string
-	var onuTypeOID string
-	var onuSerialNumberOID string
-	var onuRxPowerOID string
-	//var onuTxPowerOID string
-	var onuStatusOID string
-
-	switch ponID {
-	case 1:
-		baseOID = u.cfg.OltCfg.BaseOID1
-		onuIDNameOID = u.cfg.Board1Pon1.OnuIDNameOID
-		onuTypeOID = u.cfg.Board1Pon1.OnuTypeOID
-		onuSerialNumberOID = u.cfg.Board1Pon1.OnuSerialNumberOID
-		onuRxPowerOID = u.cfg.Board1Pon1.OnuRxPowerOID
-		onuStatusOID = u.cfg.Board1Pon1.OnuStatusOID
-	case 2:
-		baseOID = u.cfg.OltCfg.BaseOID1
-		onuIDNameOID = u.cfg.Board1Pon2.OnuIDNameOID
-		onuTypeOID = u.cfg.Board1Pon2.OnuTypeOID
-		onuSerialNumberOID = u.cfg.Board1Pon2.OnuSerialNumberOID
-		onuRxPowerOID = u.cfg.Board1Pon2.OnuRxPowerOID
-		onuStatusOID = u.cfg.Board1Pon2.OnuStatusOID
-	case 3:
-		baseOID = u.cfg.OltCfg.BaseOID1
-		onuIDNameOID = u.cfg.Board1Pon3.OnuIDNameOID
-		onuTypeOID = u.cfg.Board1Pon3.OnuTypeOID
-		onuSerialNumberOID = u.cfg.Board1Pon3.OnuSerialNumberOID
-		onuRxPowerOID = u.cfg.Board1Pon3.OnuRxPowerOID
-		onuStatusOID = u.cfg.Board1Pon3.OnuStatusOID
-	case 4:
-		baseOID = u.cfg.OltCfg.BaseOID1
-		onuIDNameOID = u.cfg.Board1Pon4.OnuIDNameOID
-		onuTypeOID = u.cfg.Board1Pon4.OnuTypeOID
-		onuSerialNumberOID = u.cfg.Board1Pon4.OnuSerialNumberOID
-		onuRxPowerOID = u.cfg.Board1Pon4.OnuRxPowerOID
-		onuStatusOID = u.cfg.Board1Pon4.OnuStatusOID
-	case 5:
-		baseOID = u.cfg.OltCfg.BaseOID1
-		onuIDNameOID = u.cfg.Board1Pon5.OnuIDNameOID
-		onuTypeOID = u.cfg.Board1Pon5.OnuTypeOID
-		onuSerialNumberOID = u.cfg.Board1Pon5.OnuSerialNumberOID
-		onuRxPowerOID = u.cfg.Board1Pon5.OnuRxPowerOID
-		onuStatusOID = u.cfg.Board1Pon5.OnuStatusOID
-	case 6:
-		baseOID = u.cfg.OltCfg.BaseOID1
-		onuIDNameOID = u.cfg.Board1Pon6.OnuIDNameOID
-		onuTypeOID = u.cfg.Board1Pon6.OnuTypeOID
-		onuSerialNumberOID = u.cfg.Board1Pon6.OnuSerialNumberOID
-		onuRxPowerOID = u.cfg.Board1Pon6.OnuRxPowerOID
-		onuStatusOID = u.cfg.Board1Pon6.OnuStatusOID
-	case 7:
-		baseOID = u.cfg.OltCfg.BaseOID1
-		onuIDNameOID = u.cfg.Board1Pon7.OnuIDNameOID
-		onuTypeOID = u.cfg.Board1Pon7.OnuTypeOID
-		onuSerialNumberOID = u.cfg.Board1Pon7.OnuSerialNumberOID
-		onuRxPowerOID = u.cfg.Board1Pon7.OnuRxPowerOID
-		onuStatusOID = u.cfg.Board1Pon7.OnuStatusOID
-	case 8:
-		baseOID = u.cfg.OltCfg.BaseOID1
-		onuIDNameOID = u.cfg.Board1Pon8.OnuIDNameOID
-		onuTypeOID = u.cfg.Board1Pon8.OnuTypeOID
-		onuSerialNumberOID = u.cfg.Board1Pon8.OnuSerialNumberOID
-		onuRxPowerOID = u.cfg.Board1Pon8.OnuRxPowerOID
-		onuStatusOID = u.cfg.Board1Pon8.OnuStatusOID
-	default:
-		baseOID = u.cfg.OltCfg.BaseOID1
-		onuIDNameOID = u.cfg.Board1Pon1.OnuIDNameOID
-		onuTypeOID = u.cfg.Board1Pon1.OnuTypeOID
-		onuSerialNumberOID = u.cfg.Board1Pon1.OnuSerialNumberOID
-		onuRxPowerOID = u.cfg.Board1Pon1.OnuRxPowerOID
-		onuStatusOID = u.cfg.Board1Pon1.OnuStatusOID
-	}
-
-	// Menggunakan SNMP Walk dengan timeout
-	var onuInformationList []model.ONUInformation
-
-	// Buat map untuk menyimpan hasil SNMP Walk
-	snmpDataMap := make(map[string]gosnmp.SnmpPDU)
-
-	err := u.snmpRepository.Walk(baseOID+onuIDNameOID, func(pdu gosnmp.SnmpPDU) error {
-		// Simpan hasil SNMP Walk dalam map dengan ID sebagai kunci
-		snmpDataMap[utils.ExtractONUID(pdu.Name)] = pdu
-		return nil
-	})
-
-	if err != nil {
-		panic(err)
-	}
-
-	// Lakukan pengolahan berdasarkan data SNMP yang tersimpan di map snmpDataMap
-	for _, pdu := range snmpDataMap {
-		onuInfo := model.ONUInformation{
-			PON:  ponID,
-			ID:   utils.ExtractONUID(pdu.Name),
-			Name: utils.ExtractName(pdu.Value),
-		}
-
-		// Lakukan pengolahan berdasarkan data SNMP yang tersimpan
-		onuType, err := u.getONUType(ctx, onuTypeOID, onuInfo.ID)
-		if err == nil {
-			onuInfo.OnuType = onuType
-		}
-
-		onuSerialNumber, err := u.getSerialNumber(ctx, onuSerialNumberOID, onuInfo.ID)
-		if err == nil {
-			onuInfo.SerialNumber = onuSerialNumber
-		}
-
-		onuRXPower, err := u.getRxPower(ctx, onuRxPowerOID, onuInfo.ID)
-		if err == nil {
-			onuInfo.RXPower = onuRXPower
-		}
-
-		//onuTXPower, err := u.getTxPower(ctx, onuTxPowerOID, onuInfo.ID)
-		//if err == nil {
-		//	onuInfo.TXPower = onuTXPower
-		//}
-
-		onuStatus, err := u.getStatus(ctx, onuStatusOID, onuInfo.ID)
-		if err == nil {
-			onuInfo.Status = onuStatus
-		}
-
-		onuInformationList = append(onuInformationList, onuInfo)
-	}
-
-	// Urutkan berdasarkan ID
-	sort.Slice(onuInformationList, func(i, j int) bool {
-		onuID1, _ := strconv.Atoi(onuInformationList[i].ID)
-		onuID2, _ := strconv.Atoi(onuInformationList[j].ID)
-		return onuID1 < onuID2
-	})
-
 	return onuInformationList, nil
 }
 
