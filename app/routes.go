@@ -8,7 +8,7 @@ import (
 	"github.com/sumitroajiprabowo/go-snmp-olt-c320/internal/handler"
 )
 
-func loadRoutes(ponHandler *handler.PonHandler) *chi.Mux {
+func loadRoutes(onuHandler *handler.OnuHandler) *chi.Mux {
 	router := chi.NewRouter()
 
 	// Middleware for logging requests
@@ -17,28 +17,22 @@ func loadRoutes(ponHandler *handler.PonHandler) *chi.Mux {
 	// Define a simple root endpoint
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Hello, this is the root endpoint!"))
+		write, err := w.Write([]byte("Hello, this is the root endpoint!"))
+		if err != nil {
+			return
+		}
+		_ = write
 	})
 
 	// Route for "pon" related endpoints
 	router.Route("/pon", func(r chi.Router) {
-		// Use the "ponHandler" to handle specific endpoints
-		r.Get("/", ponHandler.List)
-		r.Get("/{id}", ponHandler.GetByPonID)
+		// Use the "onuHandler" to handle specific endpoints
+		r.Get("/", onuHandler.List)
 	})
 
 	router.Route("/gtgo", func(r chi.Router) {
-		r.Get("/{gtgo_id}/pon/{id}", ponHandler.GetByGtGoIDAndPonID)
+		r.Get("/{gtgo_id}/pon/{id}", onuHandler.GetByGtGoIDAndPonID)
 	})
 
 	return router
-}
-
-func loadPonRoutes(router chi.Router) {
-	ponHandler := &handler.PonHandler{}
-	gtGoHandler := &handler.PonHandler{}
-
-	// Pass the "ponHandler" to the "loadRoutes" function
-	router.Mount("/", loadRoutes(ponHandler))
-	router.Mount("/", loadRoutes(gtGoHandler))
 }
