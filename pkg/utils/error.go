@@ -31,3 +31,12 @@ func ErrorInternalServerError(w http.ResponseWriter, err error) {
 	}
 	SendJSONResponse(w, http.StatusInternalServerError, webResponse)
 }
+
+func ErrorNotFound(w http.ResponseWriter, err error) {
+	webResponse := ErrorResponse{
+		Code:    http.StatusNotFound,
+		Status:  "Not Found",
+		Message: err.Error(),
+	}
+	SendJSONResponse(w, http.StatusNotFound, webResponse)
+}
