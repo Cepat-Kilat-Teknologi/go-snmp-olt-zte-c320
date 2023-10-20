@@ -10,5 +10,5 @@ FROM gcr.io/distroless/static-debian11 as prod
 ENV config=prod
 COPY --from=dev go/bin/app /
 COPY --from=dev app/config/config-prod.yml /config/config-prod.yml
-EXPOSE 8080
+EXPOSE 8081
 ENTRYPOINT ["/app"]
