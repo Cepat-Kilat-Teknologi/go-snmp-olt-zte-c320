@@ -7,7 +7,7 @@ import (
 
 type Config struct {
 	SnmpCfg    SnmpConfig
-	ServerCfg  ServerConfig
+	RedisCfg   RedisConfig
 	OltCfg     OltConfig
 	Board1Pon1 Board1Pon1
 	Board1Pon2 Board1Pon2
@@ -24,9 +24,15 @@ type SnmpConfig struct {
 	Community string `mapstructure:"community"`
 }
 
-type ServerConfig struct {
-	Host string `mapstructure:"host"`
-	Port uint16 `mapstructure:"port"`
+type RedisConfig struct {
+	Host               string `mapstructure:"host"`
+	Port               string `mapstructure:"port"`
+	Password           string `mapstructure:"password"`
+	DB                 int    `mapstructure:"db"`
+	DefaultDB          int    `mapstructure:"default_db"`
+	MinIdleConnections int    `mapstructure:"min_idle_connections"`
+	PoolSize           int    `mapstructure:"pool_size"`
+	PoolTimeout        int    `mapstructure:"pool_timeout"`
 }
 
 type OltConfig struct {
@@ -43,6 +49,8 @@ type Board1Pon1 struct {
 	OnuRxPowerOID      string `mapstructure:"onu_rx_power"`
 	OnuTxPowerOID      string `mapstructure:"onu_tx_power"`
 	OnuStatusOID       string `mapstructure:"onu_status_id"`
+	OnuIPAddressOID    string `mapstructure:"onu_ip_address"`
+	OnuDescriptionOID  string `mapstructure:"onu_description"`
 }
 
 type Board1Pon2 struct {
@@ -52,6 +60,8 @@ type Board1Pon2 struct {
 	OnuRxPowerOID      string `mapstructure:"onu_rx_power"`
 	OnuTxPowerOID      string `mapstructure:"onu_tx_power"`
 	OnuStatusOID       string `mapstructure:"onu_status_id"`
+	OnuIPAddressOID    string `mapstructure:"onu_ip_address"`
+	OnuDescriptionOID  string `mapstructure:"onu_description"`
 }
 
 type Board1Pon3 struct {
@@ -61,6 +71,8 @@ type Board1Pon3 struct {
 	OnuRxPowerOID      string `mapstructure:"onu_rx_power"`
 	OnuTxPowerOID      string `mapstructure:"onu_tx_power"`
 	OnuStatusOID       string `mapstructure:"onu_status_id"`
+	OnuIPAddressOID    string `mapstructure:"onu_ip_address"`
+	OnuDescriptionOID  string `mapstructure:"onu_description"`
 }
 
 type Board1Pon4 struct {
@@ -70,6 +82,8 @@ type Board1Pon4 struct {
 	OnuRxPowerOID      string `mapstructure:"onu_rx_power"`
 	OnuTxPowerOID      string `mapstructure:"onu_tx_power"`
 	OnuStatusOID       string `mapstructure:"onu_status_id"`
+	OnuIPAddressOID    string `mapstructure:"onu_ip_address"`
+	OnuDescriptionOID  string `mapstructure:"onu_description"`
 }
 
 type Board1Pon5 struct {
@@ -79,6 +93,8 @@ type Board1Pon5 struct {
 	OnuRxPowerOID      string `mapstructure:"onu_rx_power"`
 	OnuTxPowerOID      string `mapstructure:"onu_tx_power"`
 	OnuStatusOID       string `mapstructure:"onu_status_id"`
+	OnuIPAddressOID    string `mapstructure:"onu_ip_address"`
+	OnuDescriptionOID  string `mapstructure:"onu_description"`
 }
 
 type Board1Pon6 struct {
@@ -88,6 +104,8 @@ type Board1Pon6 struct {
 	OnuRxPowerOID      string `mapstructure:"onu_rx_power"`
 	OnuTxPowerOID      string `mapstructure:"onu_tx_power"`
 	OnuStatusOID       string `mapstructure:"onu_status_id"`
+	OnuIPAddressOID    string `mapstructure:"onu_ip_address"`
+	OnuDescriptionOID  string `mapstructure:"onu_description"`
 }
 
 type Board1Pon7 struct {
@@ -97,6 +115,8 @@ type Board1Pon7 struct {
 	OnuRxPowerOID      string `mapstructure:"onu_rx_power"`
 	OnuTxPowerOID      string `mapstructure:"onu_tx_power"`
 	OnuStatusOID       string `mapstructure:"onu_status_id"`
+	OnuIPAddressOID    string `mapstructure:"onu_ip_address"`
+	OnuDescriptionOID  string `mapstructure:"onu_description"`
 }
 
 type Board1Pon8 struct {
@@ -106,6 +126,8 @@ type Board1Pon8 struct {
 	OnuRxPowerOID      string `mapstructure:"onu_rx_power"`
 	OnuTxPowerOID      string `mapstructure:"onu_tx_power"`
 	OnuStatusOID       string `mapstructure:"onu_status_id"`
+	OnuIPAddressOID    string `mapstructure:"onu_ip_address"`
+	OnuDescriptionOID  string `mapstructure:"onu_description"`
 }
 
 // LoadConfig file from given path using viper
