@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"github.com/megadata-dev/go-snmp-olt-c320/config"
 	"github.com/megadata-dev/go-snmp-olt-c320/internal/handler"
-	snmp2 "github.com/megadata-dev/go-snmp-olt-c320/internal/repository/snmp"
+	"github.com/megadata-dev/go-snmp-olt-c320/internal/repository"
 	"github.com/megadata-dev/go-snmp-olt-c320/internal/usecase"
+	"github.com/megadata-dev/go-snmp-olt-c320/pkg/redis"
 	"github.com/megadata-dev/go-snmp-olt-c320/pkg/snmp"
 	"github.com/megadata-dev/go-snmp-olt-c320/pkg/utils"
 	"log"
@@ -31,10 +32,14 @@ func (a *App) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
+	redisClient := redis.NewRedisClient(cfg)
+	defer redisClient.Close()
+
 	snmpConn, err := snmp.SetupSnmpConnection(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to set up SNMP connection: %w", err)
 	}
+
 	defer func() {
 		if err := snmpConn.Conn.Close(); err != nil {
 			log.Printf("Failed to close SNMP connection: %v", err)
@@ -42,10 +47,11 @@ func (a *App) Start(ctx context.Context) error {
 	}()
 
 	// Initialize repository
-	snmpRepo := snmp2.NewPonRepository(snmpConn)
+	snmpRepo := repository.NewPonRepository(snmpConn)
+	redisRepo := repository.NewOnuRedisRepo(redisClient)
 
 	// Initialize usecase
-	onuUsecase := usecase.NewOnuUsecase(snmpRepo, cfg)
+	onuUsecase := usecase.NewOnuUsecase(snmpRepo, redisRepo, cfg)
 
 	// Initialize handler
 	onuHandler := handler.NewOnuHandler(onuUsecase)
@@ -53,11 +59,12 @@ func (a *App) Start(ctx context.Context) error {
 	// Initialize router
 	a.router = loadRoutes(onuHandler)
 
-	fmt.Printf("Starting server at %s:%d\n", cfg.ServerCfg.Host, cfg.ServerCfg.Port)
+	fmt.Println("Server Successfully Running")
 
-	addr := fmt.Sprintf("%s:%d", cfg.ServerCfg.Host, cfg.ServerCfg.Port)
+	// Start server
+	addr := "8081"
 	server := &http.Server{
-		Addr:    addr,
+		Addr:    ":" + addr,
 		Handler: a.router,
 	}
 
