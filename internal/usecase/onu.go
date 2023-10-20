@@ -772,63 +772,51 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, gtGoID, ponID int) ([]mo
 		return cachedOnuData, nil
 	}
 
-	var usedOnuIDList []model.OnuOnlyID // Create slice to store ONU informationList
+	// Perform SNMP Walk to get ONU ID and ONU Name
+	snmpOID := baseOID + onuIDNameOID        // SNMP OID variable
+	emptyOnuIDList := make([]model.OnuID, 0) // Create a slice of ONU ID
 
-	var emptyOnuIDList []model.OnuID // Create slice to store ONU informationList
+	// Perform SNMP Walk to get ONU ID and Name using snmpRepository Walk method with timeout context parameter
+	err = u.snmpRepository.Walk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
+		idOnuID := utils.ExtractIDOnuID(pdu.Name) // Extract ONU ID from SNMP PDU Name
 
-	snmpDataMap := make(map[string]gosnmp.SnmpPDU) // Create map to store SNMP data
+		// Append ONU information to the emptyOnuIDList
+		emptyOnuIDList = append(emptyOnuIDList, model.OnuID{
+			GTGO: gtGoID,  // Set GTGO ID to ONU onuInfo struct GTGO field
+			PON:  ponID,   // Set PON ID to ONU onuInfo  struct PON field
+			ID:   idOnuID, // Set ONU ID (extracted from SNMP PDU) to onuInfo variable (ONU ID)
+		})
 
-	/*
-		Perform SNMP Walk to get ONU ID and ONU Name
-		based on GTGO ID and PON ID using snmpRepository Walk method
-		with context and OID as parameter
-	*/
-	err = u.snmpRepository.Walk(baseOID+onuIDNameOID, func(pdu gosnmp.SnmpPDU) error {
-		// Store SNMP data to map with ONU ID as key and PDU as value to be used later
-		snmpDataMap[utils.ExtractONUID(pdu.Name)] = pdu
 		return nil
 	})
 
 	if err != nil {
-		return nil, err // Return error if error is not nil
+		return nil, err
 	}
 
-	/*
-		Loop through SNMP data map to get ONU information based on ONU ID and ONU Name stored in map before and store
-		it to slice of ONU information list to be returned later to caller function as response data
-	*/
-	for _, pdu := range snmpDataMap {
-		onuInfo := model.OnuOnlyID{
-			ID: utils.ExtractIDOnuID(pdu.Name), // Set ONU ID to ONU onuInfo struct ID field
-		}
-		usedOnuIDList = append(usedOnuIDList, onuInfo) // Append ONU onuInfo struct to ONU information list
-	}
-
-	// Create map to store numbers to be deleted
+	// Create a map to store numbers to be deleted
 	numbersToRemove := make(map[int]bool)
 
-	// Create loop to check numbers to be deleted from 1 to 128
-	for i := 1; i <= 128; i++ {
-		// Looping for checking numbers to be deleted from usedOnuIDList slice
-		for _, usedOnuID := range usedOnuIDList {
-			if i == usedOnuID.ID {
-				numbersToRemove[i] = true // Set numbers to be deleted to true
-			}
-		}
+	// Loop through emptyOnuIDList to get the numbers to be deleted
+	for _, onuInfo := range emptyOnuIDList {
+		numbersToRemove[onuInfo.ID] = true
 	}
 
-	// Create a new slice to hold the gtgo_id, pon_id and onu_id data without the numbers having to be deleted
+	// Create a new slice to hold the gtgo_id, pon_id and onu_id data without the numbers to be deleted
+	emptyOnuIDList = emptyOnuIDList[:0]
+
+	// Loop through 128 numbers to get the numbers to be deleted
 	for i := 1; i <= 128; i++ {
 		if _, ok := numbersToRemove[i]; !ok {
 			emptyOnuIDList = append(emptyOnuIDList, model.OnuID{
 				GTGO: gtGoID, // Set GTGO ID to ONU onuInfo struct GTGO field
 				PON:  ponID,  // Set PON ID to ONU onuInfo  struct PON field
-				ID:   i,      // Number that will not be deleted
+				ID:   i,      // Number 1-128 that is not in the numbers to be deleted
 			})
 		}
 	}
 
-	//Sort by ID ascending
+	// Sort by ID ascending
 	sort.Slice(emptyOnuIDList, func(i, j int) bool {
 		return emptyOnuIDList[i].ID < emptyOnuIDList[j].ID
 	})
@@ -836,10 +824,10 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, gtGoID, ponID int) ([]mo
 	// Set data to Redis using SetOnuIDCtx method with context, Redis key and data as parameter
 	err = u.redisRepository.SetOnuIDCtx(ctx, redisKey, 300, emptyOnuIDList)
 	if err != nil {
-		return nil, err // Return error if error is not nil
+		return nil, err
 	}
 
-	return emptyOnuIDList, nil // Return ONU information list and nil error
+	return emptyOnuIDList, nil
 }
 
 func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
