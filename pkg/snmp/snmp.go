@@ -15,11 +15,12 @@ func SetupSnmpConnection(config *config.Config) (*gosnmp.GoSNMP, error) {
 		Community: config.SnmpCfg.Community,
 		Version:   gosnmp.Version2c,
 		Timeout:   time.Duration(300) * time.Second,
+		Retries:   3,
 	}
 
 	err := target.Connect()
 	if err != nil {
-		return nil, fmt.Errorf("Gagal terhubung: %w", err)
+		return nil, fmt.Errorf("gagal terhubung: %w", err)
 	}
 
 	return target, nil
