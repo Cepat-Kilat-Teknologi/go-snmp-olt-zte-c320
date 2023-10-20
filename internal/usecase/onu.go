@@ -3,10 +3,11 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/gosnmp/gosnmp"
 	"github.com/megadata-dev/go-snmp-olt-c320/config"
 	"github.com/megadata-dev/go-snmp-olt-c320/internal/model"
-	"github.com/megadata-dev/go-snmp-olt-c320/internal/repository/snmp"
+	"github.com/megadata-dev/go-snmp-olt-c320/internal/repository"
 	"github.com/megadata-dev/go-snmp-olt-c320/pkg/utils"
 	"sort"
 	"strconv"
@@ -16,17 +17,25 @@ import (
 type OnuUseCase interface {
 	GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int) ([]model.ONUInfoPerGTGO, error)
 	GetByGtGoIDPonIDAndOnuID(ctx context.Context, gtGoID, ponID, onuID int) (model.ONUCustomerInfo, error)
+	GetEmptyOnuID(ctx context.Context, gtGoID, ponID int) ([]model.OnuID, error)
+	GetByGtGoIDAndPonIDWithPagination(ctx context.Context, gtGoID, ponID, page, pageSize int) (
+		[]model.ONUInfoPerGTGO, int,
+	)
 }
 
 type onuUsecase struct {
-	snmpRepository snmp.RepositorySNMP
-	cfg            *config.Config
+	snmpRepository  repository.RepositorySNMP
+	redisRepository repository.OnuRedisRepo
+	cfg             *config.Config
 }
 
-func NewOnuUsecase(snmpRepository snmp.RepositorySNMP, cfg *config.Config) OnuUseCase {
+func NewOnuUsecase(
+	snmpRepository repository.RepositorySNMP, redisRepository repository.OnuRedisRepo, cfg *config.Config,
+) OnuUseCase {
 	return &onuUsecase{
-		snmpRepository: snmpRepository,
-		cfg:            cfg,
+		snmpRepository:  snmpRepository,
+		redisRepository: redisRepository,
+		cfg:             cfg,
 	}
 }
 
@@ -35,12 +44,14 @@ func (u *onuUsecase) GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int)
 	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
 	defer cancel()                                          // Cancel context when function is done
 
-	var baseOID string            // Base OID variable
-	var onuIDNameOID string       // ONU ID Name OID variable
-	var onuTypeOID string         // ONU Type OID variable
-	var onuSerialNumberOID string // ONU Serial Number OID variable
-	var onuRxPowerOID string      // ONU RX Power OID variable
-	var onuStatusOID string       // ONU Status OID variable
+	var (
+		baseOID            string // Base OID variable
+		onuIDNameOID       string // ONU ID Name OID variable
+		onuTypeOID         string // ONU Type OID variable
+		onuSerialNumberOID string // ONU Serial Number OID variable
+		onuRxPowerOID      string // ONU RX Power OID variable
+		onuStatusOID       string // ONU Status OID variable
+	)
 
 	// Determine base OID and other OID based on GTGO ID and PON ID
 	switch gtGoID {
@@ -170,6 +181,15 @@ func (u *onuUsecase) GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int)
 		return nil, errors.New("invalid GTGO ID") // Return error
 	}
 
+	// Redis Key
+	redisKey := "gtgo_" + strconv.Itoa(gtGoID) + "_pon_" + strconv.Itoa(ponID)
+
+	// Try to get data from Redis using GetONUInfoList method with context and Redis key as parameter
+	cachedOnuData, err := u.redisRepository.GetONUInfoList(ctx, redisKey)
+	if err == nil && cachedOnuData != nil {
+		return cachedOnuData, nil // Return cached data if error is nil and cached data is not nil
+	}
+
 	var onuInformationList []model.ONUInfoPerGTGO // Create slice to store ONU informationList
 
 	snmpDataMap := make(map[string]gosnmp.SnmpPDU) // Create map to store SNMP data
@@ -179,7 +199,7 @@ func (u *onuUsecase) GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int)
 		based on GTGO ID and PON ID using snmpRepository Walk method
 		with context and OID as parameter
 	*/
-	err := u.snmpRepository.Walk(baseOID+onuIDNameOID, func(pdu gosnmp.SnmpPDU) error {
+	err = u.snmpRepository.Walk(baseOID+onuIDNameOID, func(pdu gosnmp.SnmpPDU) error {
 		// Store SNMP data to map with ONU ID as key and PDU as value to be used later
 		snmpDataMap[utils.ExtractONUID(pdu.Name)] = pdu
 		return nil
@@ -232,6 +252,13 @@ func (u *onuUsecase) GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int)
 	sort.Slice(onuInformationList, func(i, j int) bool {
 		return onuInformationList[i].ID < onuInformationList[j].ID
 	})
+
+	// Save ONU information list to Redis
+	err = u.redisRepository.SaveONUInfoList(ctx, redisKey, 300, onuInformationList)
+	if err != nil {
+		return nil, err // Return error if error is not nil
+	}
+
 	return onuInformationList, nil // Return ONU information list and nil error
 }
 
@@ -242,15 +269,17 @@ func (u *onuUsecase) GetByGtGoIDPonIDAndOnuID(ctx context.Context, gtGoID, ponID
 	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
 	defer cancel() // Cancel context when function is done
 
-	var baseOID string            // Base OID variable
-	var onuIDNameOID string       // ONU ID Name OID variable
-	var onuTypeOID string         // ONU Type OID variable
-	var onuSerialNumberOID string // ONU Serial Number OID variable
-	var onuRxPowerOID string      // ONU RX Power OID variable
-	var onuTXPowerOID string      // ONU TX Power OID variable
-	var onuStatusOID string       // ONU Status OID variable
-	var onuIPAddressOID string    // ONU IP Address OID variable
-	var onuDescriptionOID string  // ONU Description OID variable
+	var (
+		baseOID            string // Base OID variable
+		onuIDNameOID       string // ONU ID Name OID variable
+		onuTypeOID         string // ONU Type OID variable
+		onuSerialNumberOID string // ONU Serial Number OID variable
+		onuRxPowerOID      string // ONU RX Power OID variable
+		onuTXPowerOID      string // ONU TX Power OID variable
+		onuStatusOID       string // ONU Status OID variable
+		onuIPAddressOID    string // ONU IP Address OID variable
+		onuDescriptionOID  string // ONU Description OID variable
+	)
 
 	// Determine base OID and other OID based on GTGO ID and PON ID
 	switch gtGoID {
@@ -658,4 +687,456 @@ func (u *onuUsecase) getDescription(ctx context.Context, onuDescriptionOID, onuI
 	}
 
 	return onuDescription, nil // Return ONU Description
+}
+
+func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, gtGoID, ponID int) ([]model.OnuID, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
+	defer cancel()
+
+	var (
+		baseOID      string // Base OID variable
+		onuIDNameOID string // ONU ID Name OID variable
+	)
+
+	// Determine base OID and other OID based on GTGO ID and PON ID
+	switch gtGoID {
+	case 0: // GTGO 0
+		switch ponID {
+		case 1: // PON 1
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon1.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 2: // PON 2
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon2.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 3: // PON 3
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon3.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 4: // PON 4
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon4.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 5: // PON 5
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon5.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 6: // PON 6
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon6.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 7: // PON 7
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon7.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 8: // PON 8
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon8.OnuIDNameOID // ONU ID Name OID variable get from config
+		default: // Invalid PON ID
+			return nil, errors.New("invalid PON ID") // Return error
+		}
+	case 1: // GTGO 1
+		switch ponID {
+		case 1: // PON 1
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon1.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 2: // PON 2
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon2.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 3: // PON 3
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon3.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 4: // PON 4
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon4.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 5: // PON 5
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon5.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 6: // PON 6
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon6.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 7: // PON 7
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon7.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 8: // PON 8
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon8.OnuIDNameOID // ONU ID Name OID variable get from config
+		default: // Invalid PON ID
+			return nil, errors.New("invalid PON ID") // Return error
+		}
+	default: // Invalid GTGO ID
+		return nil, errors.New("invalid GTGO ID") // Return error
+	}
+
+	//Redis Key
+	redisKey := "gtgo_" + strconv.Itoa(gtGoID) + "_pon_" + strconv.Itoa(ponID) + "_empty_onu_id"
+
+	//Try to get data from Redis using GetOnuIDCtx method with context and Redis key as parameter
+	cachedOnuData, err := u.redisRepository.GetOnuIDCtx(ctx, redisKey)
+	if err == nil && cachedOnuData != nil {
+		// If data exist in Redis, then return data from Redis
+		return cachedOnuData, nil
+	}
+
+	var usedOnuIDList []model.OnuOnlyID // Create slice to store ONU informationList
+
+	var emptyOnuIDList []model.OnuID // Create slice to store ONU informationList
+
+	snmpDataMap := make(map[string]gosnmp.SnmpPDU) // Create map to store SNMP data
+
+	/*
+		Perform SNMP Walk to get ONU ID and ONU Name
+		based on GTGO ID and PON ID using snmpRepository Walk method
+		with context and OID as parameter
+	*/
+	err = u.snmpRepository.Walk(baseOID+onuIDNameOID, func(pdu gosnmp.SnmpPDU) error {
+		// Store SNMP data to map with ONU ID as key and PDU as value to be used later
+		snmpDataMap[utils.ExtractONUID(pdu.Name)] = pdu
+		return nil
+	})
+
+	if err != nil {
+		return nil, err // Return error if error is not nil
+	}
+
+	/*
+		Loop through SNMP data map to get ONU information based on ONU ID and ONU Name stored in map before and store
+		it to slice of ONU information list to be returned later to caller function as response data
+	*/
+	for _, pdu := range snmpDataMap {
+		onuInfo := model.OnuOnlyID{
+			ID: utils.ExtractIDOnuID(pdu.Name), // Set ONU ID to ONU onuInfo struct ID field
+		}
+		usedOnuIDList = append(usedOnuIDList, onuInfo) // Append ONU onuInfo struct to ONU information list
+	}
+
+	// Create map to store numbers to be deleted
+	numbersToRemove := make(map[int]bool)
+
+	// Create loop to check numbers to be deleted from 1 to 128
+	for i := 1; i <= 128; i++ {
+		// Looping for checking numbers to be deleted from usedOnuIDList slice
+		for _, usedOnuID := range usedOnuIDList {
+			if i == usedOnuID.ID {
+				numbersToRemove[i] = true // Set numbers to be deleted to true
+			}
+		}
+	}
+
+	// Create a new slice to hold the gtgo_id, pon_id and onu_id data without the numbers having to be deleted
+	for i := 1; i <= 128; i++ {
+		if _, ok := numbersToRemove[i]; !ok {
+			emptyOnuIDList = append(emptyOnuIDList, model.OnuID{
+				GTGO: gtGoID, // Set GTGO ID to ONU onuInfo struct GTGO field
+				PON:  ponID,  // Set PON ID to ONU onuInfo  struct PON field
+				ID:   i,      // Number that will not be deleted
+			})
+		}
+	}
+
+	//Sort by ID ascending
+	sort.Slice(emptyOnuIDList, func(i, j int) bool {
+		return emptyOnuIDList[i].ID < emptyOnuIDList[j].ID
+	})
+
+	// Set data to Redis using SetOnuIDCtx method with context, Redis key and data as parameter
+	err = u.redisRepository.SetOnuIDCtx(ctx, redisKey, 300, emptyOnuIDList)
+	if err != nil {
+		return nil, err // Return error if error is not nil
+	}
+
+	return emptyOnuIDList, nil // Return ONU information list and nil error
+}
+
+func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
+	ctx context.Context, gtGoID, ponID, pageIndex,
+	pageSize int,
+) (
+	[]model.ONUInfoPerGTGO,
+	int,
+) {
+
+	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
+	defer cancel()                                          // Cancel context when function is done
+
+	var (
+		baseOID            string // Base OID variable
+		onuIDNameOID       string // ONU ID Name OID variable
+		onuTypeOID         string // ONU Type OID variable
+		onuSerialNumberOID string // ONU Serial Number OID variable
+		onuRxPowerOID      string // ONU RX Power OID variable
+		onuStatusOID       string // ONU Status OID variable
+	)
+
+	// Determine base OID and other OID based on GTGO ID and PON ID
+	switch gtGoID {
+	case 0: // GTGO 0
+		switch ponID {
+		case 1: // PON 1
+			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon1.OnuIDNameOID             // ONU ID Name OID variable get from config
+			onuTypeOID = u.cfg.Board1Pon1.OnuTypeOID                 // ONU Type OID variable get from config
+			onuSerialNumberOID = u.cfg.Board1Pon1.OnuSerialNumberOID // ONU Serial Number OID variable get from config
+			onuRxPowerOID = u.cfg.Board1Pon1.OnuRxPowerOID           // ONU RX Power OID variable get from config
+			onuStatusOID = u.cfg.Board1Pon1.OnuStatusOID             // ONU Status OID variable get from config
+		case 2: // PON 2
+			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon2.OnuIDNameOID             // ONU ID Name OID variable get from config
+			onuTypeOID = u.cfg.Board1Pon2.OnuTypeOID                 // ONU Type OID variable get from config
+			onuSerialNumberOID = u.cfg.Board1Pon2.OnuSerialNumberOID // ONU Serial Number OID variable get from config
+			onuRxPowerOID = u.cfg.Board1Pon2.OnuRxPowerOID           // ONU RX Power OID variable get from config
+			onuStatusOID = u.cfg.Board1Pon2.OnuStatusOID             // ONU Status OID variable get from config
+		case 3: // PON 3
+			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon3.OnuIDNameOID             // ONU ID Name OID variable get from config
+			onuTypeOID = u.cfg.Board1Pon3.OnuTypeOID                 // ONU Type OID variable get from config
+			onuSerialNumberOID = u.cfg.Board1Pon3.OnuSerialNumberOID // ONU Serial Number OID variable get from config
+			onuRxPowerOID = u.cfg.Board1Pon3.OnuRxPowerOID           // ONU RX Power OID variable get from config
+			onuStatusOID = u.cfg.Board1Pon3.OnuStatusOID             // ONU Status OID variable get from config
+		case 4: // PON 4
+			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon4.OnuIDNameOID             // ONU ID Name OID variable get from config
+			onuTypeOID = u.cfg.Board1Pon4.OnuTypeOID                 // ONU Type OID variable get from config
+			onuSerialNumberOID = u.cfg.Board1Pon4.OnuSerialNumberOID // ONU Serial Number OID variable get from config
+			onuRxPowerOID = u.cfg.Board1Pon4.OnuRxPowerOID           // ONU RX Power OID variable get from config
+			onuStatusOID = u.cfg.Board1Pon4.OnuStatusOID             // ONU Status OID variable get from config
+		case 5: // PON 5
+			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon5.OnuIDNameOID             // ONU ID Name OID variable get from config
+			onuTypeOID = u.cfg.Board1Pon5.OnuTypeOID                 // ONU Type OID variable get from config
+			onuSerialNumberOID = u.cfg.Board1Pon5.OnuSerialNumberOID // ONU Serial Number OID variable get from config
+			onuRxPowerOID = u.cfg.Board1Pon5.OnuRxPowerOID           // ONU RX Power OID variable get from config
+			onuStatusOID = u.cfg.Board1Pon5.OnuStatusOID             // ONU Status OID variable get from config
+		case 6: // PON 6
+			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon6.OnuIDNameOID             // ONU ID Name OID variable get from config
+			onuTypeOID = u.cfg.Board1Pon6.OnuTypeOID                 // ONU Type OID variable get from config
+			onuSerialNumberOID = u.cfg.Board1Pon6.OnuSerialNumberOID // ONU Serial Number OID variable get from config
+			onuRxPowerOID = u.cfg.Board1Pon6.OnuRxPowerOID           // ONU RX Power OID variable get from config
+			onuStatusOID = u.cfg.Board1Pon6.OnuStatusOID             // ONU Status OID variable get from config
+		case 7: // PON 7
+			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon7.OnuIDNameOID             // ONU ID Name OID variable get from config
+			onuTypeOID = u.cfg.Board1Pon7.OnuTypeOID                 // ONU Type OID variable get from config
+			onuSerialNumberOID = u.cfg.Board1Pon7.OnuSerialNumberOID // ONU Serial Number OID variable get from config
+			onuRxPowerOID = u.cfg.Board1Pon7.OnuRxPowerOID           // ONU RX Power OID variable get from config
+			onuStatusOID = u.cfg.Board1Pon7.OnuStatusOID             // ONU Status OID variable get from config
+		case 8: // PON 8
+			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon8.OnuIDNameOID             // ONU ID Name OID variable get from config
+			onuTypeOID = u.cfg.Board1Pon8.OnuTypeOID                 // ONU Type OID variable get from config
+			onuSerialNumberOID = u.cfg.Board1Pon8.OnuSerialNumberOID // ONU Serial Number OID variable get from config
+			onuRxPowerOID = u.cfg.Board1Pon8.OnuRxPowerOID           // ONU RX Power OID variable get from config
+			onuStatusOID = u.cfg.Board1Pon8.OnuStatusOID             // ONU Status OID variable get from config
+		default: // Invalid PON ID
+			return nil, 0 // Return error
+		}
+	case 1: // GTGO 1
+		switch ponID {
+		case 1: // PON 1
+			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon1.OnuIDNameOID             // ONU ID Name OID variable get from config
+			onuTypeOID = u.cfg.Board1Pon1.OnuTypeOID                 // ONU Type OID variable get from config
+			onuSerialNumberOID = u.cfg.Board1Pon1.OnuSerialNumberOID // ONU Serial Number OID variable get from config
+			onuRxPowerOID = u.cfg.Board1Pon1.OnuRxPowerOID           // ONU RX Power OID variable get from config
+			onuStatusOID = u.cfg.Board1Pon1.OnuStatusOID             // ONU Status OID variable get from config
+		case 2: // PON 2
+			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon2.OnuIDNameOID             // ONU ID Name OID variable get from config
+			onuTypeOID = u.cfg.Board1Pon2.OnuTypeOID                 // ONU Type OID variable get from config
+			onuSerialNumberOID = u.cfg.Board1Pon2.OnuSerialNumberOID // ONU Serial Number OID variable get from config
+			onuRxPowerOID = u.cfg.Board1Pon2.OnuRxPowerOID           // ONU RX Power OID variable get from config
+			onuStatusOID = u.cfg.Board1Pon2.OnuStatusOID             // ONU Status OID variable get from config
+		case 3: // PON 3
+			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon3.OnuIDNameOID             // ONU ID Name OID variable get from config
+			onuTypeOID = u.cfg.Board1Pon3.OnuTypeOID                 // ONU Type OID variable get from config
+			onuSerialNumberOID = u.cfg.Board1Pon3.OnuSerialNumberOID // ONU Serial Number OID variable get from config
+			onuRxPowerOID = u.cfg.Board1Pon3.OnuRxPowerOID           // ONU RX Power OID variable get from config
+			onuStatusOID = u.cfg.Board1Pon3.OnuStatusOID             // ONU Status OID variable get from config
+		case 4: // PON 4
+			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon4.OnuIDNameOID             // ONU ID Name OID variable get from config
+			onuTypeOID = u.cfg.Board1Pon4.OnuTypeOID                 // ONU Type OID variable get from config
+			onuSerialNumberOID = u.cfg.Board1Pon4.OnuSerialNumberOID // ONU Serial Number OID variable get from config
+			onuRxPowerOID = u.cfg.Board1Pon4.OnuRxPowerOID           // ONU RX Power OID variable get from config
+			onuStatusOID = u.cfg.Board1Pon4.OnuStatusOID             // ONU Status OID variable get from config
+		case 5: // PON 5
+			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon5.OnuIDNameOID             // ONU ID Name OID variable get from config
+			onuTypeOID = u.cfg.Board1Pon5.OnuTypeOID                 // ONU Type OID variable get from config
+			onuSerialNumberOID = u.cfg.Board1Pon5.OnuSerialNumberOID // ONU Serial Number OID variable get from config
+			onuRxPowerOID = u.cfg.Board1Pon5.OnuRxPowerOID           // ONU RX Power OID variable get from config
+			onuStatusOID = u.cfg.Board1Pon5.OnuStatusOID             // ONU Status OID variable get from config
+		case 6: // PON 6
+			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon6.OnuIDNameOID             // ONU ID Name OID variable get from config
+			onuTypeOID = u.cfg.Board1Pon6.OnuTypeOID                 // ONU Type OID variable get from config
+			onuSerialNumberOID = u.cfg.Board1Pon6.OnuSerialNumberOID // ONU Serial Number OID variable get from config
+			onuRxPowerOID = u.cfg.Board1Pon6.OnuRxPowerOID           // ONU RX Power OID variable get from config
+			onuStatusOID = u.cfg.Board1Pon6.OnuStatusOID             // ONU Status OID variable get from config
+		case 7: // PON 7
+			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon7.OnuIDNameOID             // ONU ID Name OID variable get from config
+			onuTypeOID = u.cfg.Board1Pon7.OnuTypeOID                 // ONU Type OID variable get from config
+			onuSerialNumberOID = u.cfg.Board1Pon7.OnuSerialNumberOID // ONU Serial Number OID variable get from config
+			onuRxPowerOID = u.cfg.Board1Pon7.OnuRxPowerOID           // ONU RX Power OID variable get from config
+			onuStatusOID = u.cfg.Board1Pon7.OnuStatusOID             // ONU Status OID variable get from config
+		case 8: // PON 8
+			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon8.OnuIDNameOID             // ONU ID Name OID variable get from config
+			onuTypeOID = u.cfg.Board1Pon8.OnuTypeOID                 // ONU Type OID variable get from config
+			onuSerialNumberOID = u.cfg.Board1Pon8.OnuSerialNumberOID // ONU Serial Number OID variable get from config
+			onuRxPowerOID = u.cfg.Board1Pon8.OnuRxPowerOID           // ONU RX Power OID variable get from config
+			onuStatusOID = u.cfg.Board1Pon8.OnuStatusOID             // Invalid PON ID
+		default: // Invalid PON ID
+			return nil, 0 // Return error
+		}
+	default: // Invalid GTGO ID
+		return nil, 0 // Return error
+	}
+
+	fmt.Println("gtgoID: ", gtGoID)
+	fmt.Println("ponID:", ponID)
+	fmt.Println("pageIndex:", pageIndex)
+	fmt.Println("pageSize:", pageSize)
+
+	var onuIDList []model.OnuID // Create slice to store ONU ID list
+
+	// Redis Key
+	redisKey := "gtgo_" + strconv.Itoa(gtGoID) + "_pon_" + strconv.Itoa(ponID)
+	fmt.Println("redisKey:", redisKey)
+
+	// Try to get data from Redis using GetOnuIDCtx method with context and Redis key as parameter
+	cachedOnuData, err := u.redisRepository.GetOnuIDCtx(ctx, redisKey)
+	if err == nil && cachedOnuData != nil {
+		// If data exist in Redis, then return data from Redis
+		onuIDList = cachedOnuData
+	}
+
+	// If data not exist in Redis, then get data from SNMP
+	if len(onuIDList) == 0 {
+		// Perform SNMP Walk to get ONU ID and ONU Name based on GTGO ID and PON ID using snmpRepository Walk method
+		// with context and OID as parameter
+		err = u.snmpRepository.Walk(baseOID+onuIDNameOID, func(pdu gosnmp.SnmpPDU) error {
+			onuID := model.OnuID{
+				ID: utils.ExtractIDOnuID(pdu.Name), // Set ONU ID to ONU onuInfo struct ID field
+			}
+			onuIDList = append(onuIDList, onuID) // Append ONU onuInfo struct to ONU information list
+			return nil
+		})
+
+		if err != nil {
+			return nil, 0 // Return error if error is not nil
+		}
+
+		// Sort ONU ID list based on ONU ID ascending
+		sort.Slice(onuIDList, func(i, j int) bool {
+			return onuIDList[i].ID < onuIDList[j].ID
+		})
+
+		// Set data to Redis
+		err = u.redisRepository.SetOnuIDCtx(ctx, redisKey, 300, onuIDList)
+
+		if err != nil {
+			return nil, 0
+		}
+	} else {
+		fmt.Println("data from redis")
+	}
+
+	// print onuIDList
+	fmt.Println(onuIDList)
+
+	var onuInformationList []model.ONUInfoPerGTGO // Create slice to store ONU informationList
+	var count int
+
+	snmpDataMap := make(map[string]gosnmp.SnmpPDU) // Create map to store SNMP data
+
+	/*
+		Perform SNMP Walk to get ONU ID and ONU Name
+		based on GTGO ID and PON ID using snmpRepository Walk method
+		with context and OID as parameter
+	*/
+	err = u.snmpRepository.Walk(baseOID+onuIDNameOID, func(pdu gosnmp.SnmpPDU) error {
+		// Store SNMP data to map with ONU ID as key and PDU as value to be used later
+		snmpDataMap[utils.ExtractONUID(pdu.Name)] = pdu
+		return nil
+	})
+
+	if err != nil {
+		return nil, 0 // Return error if error is not nil
+	}
+
+	fmt.Println(gtGoID)
+	fmt.Println(ponID)
+	fmt.Println(pageIndex)
+	fmt.Println(pageSize)
+
+	// Menghitung indeks item pertama yang akan diambil
+	startIndex := pageIndex * pageSize
+
+	// Menghitung indeks item terakhir yang akan diambil
+	endIndex := startIndex + pageSize
+
+	var currentIndex int
+
+	//fmt.Println(snmpDataMap)
+
+	for _, pdu := range snmpDataMap {
+		if currentIndex >= startIndex {
+			onuInfo := model.ONUInfoPerGTGO{
+				GTGO: gtGoID,
+				PON:  ponID,
+				ID:   utils.ExtractIDOnuID(pdu.Name),
+				Name: utils.ExtractName(pdu.Value),
+			}
+
+			// Get ONU Type based on ONU ID and ONU Type OID and store it to ONU onuInfo struct
+			onuType, err := u.getONUType(ctx, onuTypeOID, strconv.Itoa(onuInfo.ID))
+			if err == nil {
+				onuInfo.OnuType = onuType // Set ONU Type to ONU onuInfo struct OnuType field
+			}
+
+			// Get ONU Serial Number based on ONU ID and ONU Serial Number OID and store it to ONU onuInfo struct
+			onuSerialNumber, err := u.getSerialNumber(ctx, onuSerialNumberOID, strconv.Itoa(onuInfo.ID))
+			if err == nil {
+				onuInfo.SerialNumber = onuSerialNumber // Set ONU Serial Number to ONU onuInfo struct SerialNumber field
+			}
+
+			// Get ONU RX Power based on ONU ID and ONU RX Power OID and store it to ONU onuInfo struct
+			onuRXPower, err := u.getRxPower(ctx, onuRxPowerOID, strconv.Itoa(onuInfo.ID))
+			if err == nil {
+				onuInfo.RXPower = onuRXPower // Set ONU RX Power to ONU onuInfo struct RXPower field
+			}
+
+			// Get ONU Status based on ONU ID and ONU Status OID and store it to ONU onuInfo struct
+			onuStatus, err := u.getStatus(ctx, onuStatusOID, strconv.Itoa(onuInfo.ID))
+			if err == nil {
+				onuInfo.Status = onuStatus // Set ONU Status to ONU onuInfo struct Status field
+			}
+
+			onuInformationList = append(onuInformationList, onuInfo)
+		}
+
+		currentIndex++
+
+		if currentIndex >= endIndex {
+			break
+		}
+	}
+
+	// Sort ONU information list based on ONU ID ascending
+	sort.Slice(onuInformationList, func(i, j int) bool {
+		return onuInformationList[i].ID < onuInformationList[j].ID
+	})
+
+	//fmt.Println(onuInformationList)
+
+	if startIndex >= count {
+		return nil, 0
+	}
+	if endIndex > count {
+		endIndex = count
+	}
+
+	paginatedData := onuInformationList[startIndex:endIndex]
+
+	fmt.Println(paginatedData)
+
+	return paginatedData, len(paginatedData)
 }
