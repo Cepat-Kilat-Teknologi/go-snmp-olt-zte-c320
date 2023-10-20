@@ -1,4 +1,4 @@
-package snmp
+package repository
 
 import (
 	"github.com/gosnmp/gosnmp"
