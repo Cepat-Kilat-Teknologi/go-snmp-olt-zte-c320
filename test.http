@@ -1,5 +1,8 @@
-### List All ONU
-GET localhost:8080/pon
-
 ### List All ONU by GTGO and OLT PON
-GET localhost:8080/gtgo/2/pon/7
+GET localhost:8081/gtgo/2/pon/7
+
+### Get ONU by GTGO and OLT PON and ONU ID
+GET localhost:8081/gtgo/1/pon/8/onu/11
+
+### Get Empty ONU ID by GTGO and OLT PON
+GET localhost:8081/gtgo/1/pon/8/empty
