@@ -29,3 +29,13 @@ type ONUCustomerInfo struct {
 	Status       string `json:"status"`
 	IPAddress    string `json:"ip_address"`
 }
+
+type OnuID struct {
+	GTGO int `json:"gtgo"`
+	PON  int `json:"pon"`
+	ID   int `json:"onu_id"`
+}
+
+type OnuOnlyID struct {
+	ID int `json:"onu_id"`
+}
