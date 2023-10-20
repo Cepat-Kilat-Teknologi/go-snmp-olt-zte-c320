@@ -1,7 +1,7 @@
 version: '3'
 
 vars:
-  EXE: sumitroajiprabowo/e-asmara-backend{{exeExt}}
+  EXE: sumitroajiprabowo/go-snmp-olt-c320{{exeExt}}
 
 tasks:
   default:
@@ -9,9 +9,9 @@ tasks:
       - task: dev
 
   dev:
-    desc: Start the local environment
+    desc: Start the local environmen
     cmds:
-      - air -c .air.toml
+      - docker-compose -f docker-compose.dev.yaml up -d && air -c .air.toml
 
   go-install:
     cmds:
@@ -65,40 +65,17 @@ tasks:
   docker-run:
     desc: Run docker image with tag latest
     cmds:
-      - docker run -d -p 8080:8080 --name e-asmara-backend-app {{.EXE}}:latest
+      - docker run -d -p 8081:8081 --name go-snmp-olt-c320 {{.EXE}}:latest
 
   docker-stop:
     desc: Stop docker image with tag latest
     cmds:
-      - docker stop e-asmara-backend-app
+      - docker stop go-snmp-olt-c320
 
   docker-remove:
     desc: Remove docker image with tag latest
     cmds:
-      - docker rm e-asmara-backend-app
-
-  docker-dev-down:
-    desc: Stop and remove the local development docker containers
-    cmds:
-      - docker-compose -f docker-compose-dev.yml down
-
-  docker-dev-up:
-    desc: Start the local development docker containers in the background
-    cmds:
-      - docker-compose -f docker-compose-dev.yml up -d
-
-  docker-dev-restart:
-    desc: Restart the local development docker containers
-    cmds:
-      - docker-compose -f docker-compose-dev.yml down
-      - docker-compose -f docker-compose-dev.yml up -d
-
-  docker-dev-rebuild:
-    desc: Rebuild the local development docker containers
-    cmds:
-      - docker-compose -f docker-compose-dev.yml down
-      - docker-compose -f docker-compose-dev.yml up -d --build
-
+      - docker rm go-snmp-olt-c320
 
   up:
     desc: Start the docker containers in the background
