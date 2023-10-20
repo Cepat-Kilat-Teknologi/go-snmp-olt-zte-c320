@@ -11,6 +11,7 @@ import (
 	"github.com/megadata-dev/go-snmp-olt-c320/pkg/redis"
 	"github.com/megadata-dev/go-snmp-olt-c320/pkg/snmp"
 	"github.com/megadata-dev/go-snmp-olt-c320/pkg/utils"
+	rds "github.com/redis/go-redis/v9"
 	"log"
 	"net/http"
 	"os"
@@ -33,7 +34,12 @@ func (a *App) Start(ctx context.Context) error {
 	}
 
 	redisClient := redis.NewRedisClient(cfg)
-	defer redisClient.Close()
+	defer func(redisClient *rds.Client) {
+		err := redisClient.Close()
+		if err != nil {
+			log.Printf("Failed to close Redis client: %v", err)
+		}
+	}(redisClient)
 
 	snmpConn, err := snmp.SetupSnmpConnection(cfg)
 	if err != nil {
