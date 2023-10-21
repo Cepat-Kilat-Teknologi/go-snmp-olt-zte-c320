@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gosnmp/gosnmp"
-	"github.com/megadata-dev/go-snmp-olt-c320/config"
-	"github.com/megadata-dev/go-snmp-olt-c320/internal/model"
-	"github.com/megadata-dev/go-snmp-olt-c320/internal/repository"
-	"github.com/megadata-dev/go-snmp-olt-c320/pkg/utils"
+	"github.com/megadata-dev/go-snmp-olt-zte-c320/config"
+	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/model"
+	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/repository"
+	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/utils"
 	"sort"
 	"strconv"
 	"time"
@@ -18,6 +18,7 @@ type OnuUseCase interface {
 	GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int) ([]model.ONUInfoPerGTGO, error)
 	GetByGtGoIDPonIDAndOnuID(ctx context.Context, gtGoID, ponID, onuID int) (model.ONUCustomerInfo, error)
 	GetEmptyOnuID(ctx context.Context, gtGoID, ponID int) ([]model.OnuID, error)
+	UpdateEmptyOnuID(ctx context.Context, gtGoID, ponID int) error
 	GetByGtGoIDAndPonIDWithPagination(ctx context.Context, gtGoID, ponID, page, pageSize int) (
 		[]model.ONUInfoPerGTGO, int,
 	)
@@ -830,6 +831,140 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, gtGoID, ponID int) ([]mo
 	return emptyOnuIDList, nil
 }
 
+func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, gtGoID, ponID int) error {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
+	defer cancel()
+
+	var (
+		baseOID      string // Base OID variable
+		onuIDNameOID string // ONU ID Name OID variable
+	)
+
+	// Determine base OID and other OID based on GTGO ID and PON ID
+	switch gtGoID {
+	case 0: // GTGO 0
+		switch ponID {
+		case 1: // PON 1
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon1.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 2: // PON 2
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon2.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 3: // PON 3
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon3.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 4: // PON 4
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon4.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 5: // PON 5
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon5.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 6: // PON 6
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon6.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 7: // PON 7
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon7.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 8: // PON 8
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon8.OnuIDNameOID // ONU ID Name OID variable get from config
+		default: // Invalid PON ID
+			return errors.New("invalid PON ID") // Return error
+		}
+	case 1: // GTGO 1
+		switch ponID {
+		case 1: // PON 1
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon1.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 2: // PON 2
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon2.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 3: // PON 3
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon3.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 4: // PON 4
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon4.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 5: // PON 5
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon5.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 6: // PON 6
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon6.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 7: // PON 7
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon7.OnuIDNameOID // ONU ID Name OID variable get from config
+		case 8: // PON 8
+			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
+			onuIDNameOID = u.cfg.Board1Pon8.OnuIDNameOID // ONU ID Name OID variable get from config
+		default: // Invalid PON ID
+			return errors.New("invalid PON ID") // Return error
+		}
+	default: // Invalid GTGO ID
+		return errors.New("invalid GTGO ID") // Return error
+	}
+
+	// Perform SNMP Walk to get ONU ID and ONU Name
+	snmpOID := baseOID + onuIDNameOID        // SNMP OID variable
+	emptyOnuIDList := make([]model.OnuID, 0) // Create a slice of ONU ID
+
+	// Perform SNMP Walk to get ONU ID and Name using snmpRepository Walk method with timeout context parameter
+	err := u.snmpRepository.Walk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
+		idOnuID := utils.ExtractIDOnuID(pdu.Name) // Extract ONU ID from SNMP PDU Name
+
+		// Append ONU information to the emptyOnuIDList
+		emptyOnuIDList = append(emptyOnuIDList, model.OnuID{
+			GTGO: gtGoID,  // Set GTGO ID to ONU onuInfo struct GTGO field
+			PON:  ponID,   // Set PON ID to ONU onuInfo  struct PON field
+			ID:   idOnuID, // Set ONU ID (extracted from SNMP PDU) to onuInfo variable (ONU ID)
+		})
+
+		return nil
+	})
+
+	if err != nil {
+		return errors.New("failed to perform SNMP Walk")
+	}
+
+	// Create a map to store numbers to be deleted
+	numbersToRemove := make(map[int]bool)
+
+	// Loop through emptyOnuIDList to get the numbers to be deleted
+	for _, onuInfo := range emptyOnuIDList {
+		numbersToRemove[onuInfo.ID] = true
+	}
+
+	// Create a new slice to hold the gtgo_id, pon_id and onu_id data without the numbers to be deleted
+	emptyOnuIDList = emptyOnuIDList[:0]
+
+	// Loop through 128 numbers to get the numbers to be deleted
+	for i := 1; i <= 128; i++ {
+		if _, ok := numbersToRemove[i]; !ok {
+			emptyOnuIDList = append(emptyOnuIDList, model.OnuID{
+				GTGO: gtGoID, // Set GTGO ID to ONU onuInfo struct GTGO field
+				PON:  ponID,  // Set PON ID to ONU onuInfo  struct PON field
+				ID:   i,      // Number 1-128 that is not in the numbers to be deleted
+			})
+		}
+	}
+
+	// Sort by ID ascending
+	sort.Slice(emptyOnuIDList, func(i, j int) bool {
+		return emptyOnuIDList[i].ID < emptyOnuIDList[j].ID
+	})
+
+	//Redis Key
+	redisKey := "gtgo_" + strconv.Itoa(gtGoID) + "_pon_" + strconv.Itoa(ponID) + "_empty_onu_id"
+
+	// Set data to Redis using SetOnuIDCtx method with context, Redis key and data as parameter
+	err = u.redisRepository.SetOnuIDCtx(ctx, redisKey, 300, emptyOnuIDList)
+	if err != nil {
+		return errors.New("failed to set data to Redis")
+	}
+
+	return nil
+}
+
 func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
 	ctx context.Context, gtGoID, ponID, pageIndex,
 	pageSize int,
@@ -983,28 +1118,29 @@ func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
 	fmt.Println("pageIndex:", pageIndex)
 	fmt.Println("pageSize:", pageSize)
 
-	var onuIDList []model.OnuID // Create slice to store ONU ID list
+	var onlyOnuIDList []model.OnuOnlyID // Create slice to store ONU ID list
 
-	// Redis Key
-	redisKey := "gtgo_" + strconv.Itoa(gtGoID) + "_pon_" + strconv.Itoa(ponID)
-	fmt.Println("redisKey:", redisKey)
+	//// Redis Key
+	//redisKey := "gtgo_" + strconv.Itoa(gtGoID) + "_pon_" + strconv.Itoa(ponID)
+	//
+	//// Try to get data from Redis using GetOnuIDCtx method with context and Redis key as parameter
+	//cachedOnuData, err := u.redisRepository.GetOnlyOnuIDCtx(ctx, redisKey)
+	//if err == nil && cachedOnuData != nil {
+	//	// If data exist in Redis, then return data from Redis
+	//	onlyOnuIDList = cachedOnuData
+	//}
 
-	// Try to get data from Redis using GetOnuIDCtx method with context and Redis key as parameter
-	cachedOnuData, err := u.redisRepository.GetOnuIDCtx(ctx, redisKey)
-	if err == nil && cachedOnuData != nil {
-		// If data exist in Redis, then return data from Redis
-		onuIDList = cachedOnuData
-	}
+	snmpOID := baseOID + onuIDNameOID // SNMP OID variable
 
 	// If data not exist in Redis, then get data from SNMP
-	if len(onuIDList) == 0 {
+	if len(onlyOnuIDList) == 0 {
 		// Perform SNMP Walk to get ONU ID and ONU Name based on GTGO ID and PON ID using snmpRepository Walk method
 		// with context and OID as parameter
-		err = u.snmpRepository.Walk(baseOID+onuIDNameOID, func(pdu gosnmp.SnmpPDU) error {
-			onuID := model.OnuID{
-				ID: utils.ExtractIDOnuID(pdu.Name), // Set ONU ID to ONU onuInfo struct ID field
-			}
-			onuIDList = append(onuIDList, onuID) // Append ONU onuInfo struct to ONU information list
+		err := u.snmpRepository.Walk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
+			// Append ONU information to the onlyOnuIDList
+			onlyOnuIDList = append(onlyOnuIDList, model.OnuOnlyID{
+				ID: utils.ExtractIDOnuID(pdu.Name), // Extract ONU ID from SNMP PDU Name
+			})
 			return nil
 		})
 
@@ -1013,47 +1149,19 @@ func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
 		}
 
 		// Sort ONU ID list based on ONU ID ascending
-		sort.Slice(onuIDList, func(i, j int) bool {
-			return onuIDList[i].ID < onuIDList[j].ID
+		sort.Slice(onlyOnuIDList, func(i, j int) bool {
+			return onlyOnuIDList[i].ID < onlyOnuIDList[j].ID
 		})
 
-		// Set data to Redis
-		err = u.redisRepository.SetOnuIDCtx(ctx, redisKey, 300, onuIDList)
-
-		if err != nil {
-			return nil, 0
-		}
+		//// Set data to Redis
+		//err = u.redisRepository.SaveOnlyOnuIDCtx(ctx, redisKey, 300, onlyOnuIDList)
+		//
+		//if err != nil {
+		//	return nil, 0
+		//}
 	} else {
 		fmt.Println("data from redis")
 	}
-
-	// print onuIDList
-	fmt.Println(onuIDList)
-
-	var onuInformationList []model.ONUInfoPerGTGO // Create slice to store ONU informationList
-	var count int
-
-	snmpDataMap := make(map[string]gosnmp.SnmpPDU) // Create map to store SNMP data
-
-	/*
-		Perform SNMP Walk to get ONU ID and ONU Name
-		based on GTGO ID and PON ID using snmpRepository Walk method
-		with context and OID as parameter
-	*/
-	err = u.snmpRepository.Walk(baseOID+onuIDNameOID, func(pdu gosnmp.SnmpPDU) error {
-		// Store SNMP data to map with ONU ID as key and PDU as value to be used later
-		snmpDataMap[utils.ExtractONUID(pdu.Name)] = pdu
-		return nil
-	})
-
-	if err != nil {
-		return nil, 0 // Return error if error is not nil
-	}
-
-	fmt.Println(gtGoID)
-	fmt.Println(ponID)
-	fmt.Println(pageIndex)
-	fmt.Println(pageSize)
 
 	// Menghitung indeks item pertama yang akan diambil
 	startIndex := pageIndex * pageSize
@@ -1061,44 +1169,77 @@ func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
 	// Menghitung indeks item terakhir yang akan diambil
 	endIndex := startIndex + pageSize
 
+	// Jika indeks item terakhir yang akan diambil lebih besar dari jumlah item, maka indeks item terakhir yang akan diambil adalah jumlah item
+	if endIndex > len(onlyOnuIDList) {
+		endIndex = len(onlyOnuIDList)
+	}
+
+	// Ambil Data ONU ID yang akan ditampilkan berdasarkan indeks item pertama dan indeks item terakhir dari data onlyOnuIDList
+	onlyOnuIDList = onlyOnuIDList[startIndex:endIndex]
+
+	// print onuIDList
+	fmt.Println("onlyOnuIDListPages", onlyOnuIDList)
+
+	var onuInformationList []model.ONUInfoPerGTGO // Create slice to store ONU informationList
+	var count int
+
 	var currentIndex int
 
-	//fmt.Println(snmpDataMap)
-
-	for _, pdu := range snmpDataMap {
+	// Loop through onlyOnuIDList to get ONU information based on ONU ID
+	for _, onuInfo := range onlyOnuIDList {
 		if currentIndex >= startIndex {
-			onuInfo := model.ONUInfoPerGTGO{
-				GTGO: gtGoID,
-				PON:  ponID,
-				ID:   utils.ExtractIDOnuID(pdu.Name),
-				Name: utils.ExtractName(pdu.Value),
+
+			// Perform SNMP Walk to get ONU Type based on GTGO ID, PON ID and ONU ID using snmpRepository Walk method
+			// with context and OID as parameter
+			err := u.snmpRepository.Walk(baseOID+onuTypeOID+"."+strconv.Itoa(onuInfo.ID), func(pdu gosnmp.SnmpPDU) error {
+				// Append ONU information to the onuInformationList
+				onuInformationList = append(onuInformationList, model.ONUInfoPerGTGO{
+					GTGO: gtGoID, // Set GTGO ID to ONU onuInfo struct GTGO field
+					PON:  ponID,  // Set PON ID to ONU onuInfo  struct PON field
+					ID:   onuInfo.ID,
+				})
+				return nil
+			})
+
+			if err != nil {
+				return nil, 0 // Return error if error is not nil
 			}
 
-			// Get ONU Type based on ONU ID and ONU Type OID and store it to ONU onuInfo struct
-			onuType, err := u.getONUType(ctx, onuTypeOID, strconv.Itoa(onuInfo.ID))
-			if err == nil {
-				onuInfo.OnuType = onuType // Set ONU Type to ONU onuInfo struct OnuType field
+			// Perform SNMP Walk to get ONU Serial Number based on GTGO ID, PON ID and ONU ID using snmpRepository Walk method
+			// with context and OID as parameter
+			err = u.snmpRepository.Walk(baseOID+onuSerialNumberOID+"."+strconv.Itoa(onuInfo.ID), func(pdu gosnmp.SnmpPDU) error {
+				// Set ONU Serial Number to ONU onuInfo struct SerialNumber field
+				onuInformationList[currentIndex].SerialNumber = utils.ExtractName(pdu.Value)
+				return nil
+			})
+
+			if err != nil {
+				return nil, 0 // Return error if error is not nil
 			}
 
-			// Get ONU Serial Number based on ONU ID and ONU Serial Number OID and store it to ONU onuInfo struct
-			onuSerialNumber, err := u.getSerialNumber(ctx, onuSerialNumberOID, strconv.Itoa(onuInfo.ID))
-			if err == nil {
-				onuInfo.SerialNumber = onuSerialNumber // Set ONU Serial Number to ONU onuInfo struct SerialNumber field
+			// Perform SNMP Walk to get ONU RX Power based on GTGO ID, PON ID and ONU ID using snmpRepository Walk method
+			// with context and OID as parameter
+			err = u.snmpRepository.Walk(baseOID+onuRxPowerOID+"."+strconv.Itoa(onuInfo.ID), func(pdu gosnmp.SnmpPDU) error {
+				// Set ONU RX Power to ONU onuInfo struct RXPower field
+				onuInformationList[currentIndex].RXPower = utils.ExtractName(pdu.Value)
+				return nil
+			})
+
+			if err != nil {
+				return nil, 0 // Return error if error is not nil
 			}
 
-			// Get ONU RX Power based on ONU ID and ONU RX Power OID and store it to ONU onuInfo struct
-			onuRXPower, err := u.getRxPower(ctx, onuRxPowerOID, strconv.Itoa(onuInfo.ID))
-			if err == nil {
-				onuInfo.RXPower = onuRXPower // Set ONU RX Power to ONU onuInfo struct RXPower field
-			}
+			// Perform SNMP Walk to get ONU Status based on GTGO ID, PON ID and ONU ID using snmpRepository Walk method
+			// with context and OID as parameter
+			err = u.snmpRepository.Walk(baseOID+onuStatusOID+"."+strconv.Itoa(onuInfo.ID), func(pdu gosnmp.SnmpPDU) error {
+				// Set ONU Status to ONU onuInfo struct Status field
+				onuInformationList[currentIndex].Status = utils.ExtractName(pdu.Value)
+				return nil
+			})
 
-			// Get ONU Status based on ONU ID and ONU Status OID and store it to ONU onuInfo struct
-			onuStatus, err := u.getStatus(ctx, onuStatusOID, strconv.Itoa(onuInfo.ID))
-			if err == nil {
-				onuInfo.Status = onuStatus // Set ONU Status to ONU onuInfo struct Status field
+			if err != nil {
+				return nil, 0 // Return error if error is not nil
 			}
-
-			onuInformationList = append(onuInformationList, onuInfo)
 		}
 
 		currentIndex++
@@ -1108,23 +1249,29 @@ func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
 		}
 	}
 
+	// Get Count from onlyOnuIDList
+	count = len(onlyOnuIDList)
+
 	// Sort ONU information list based on ONU ID ascending
 	sort.Slice(onuInformationList, func(i, j int) bool {
 		return onuInformationList[i].ID < onuInformationList[j].ID
 	})
 
-	//fmt.Println(onuInformationList)
-
+	// Jika indeks item pertama lebih besar dari jumlah data, maka kembalikan data kosong
 	if startIndex >= count {
 		return nil, 0
 	}
+
+	// Jika indeks item terakhir yang akan diambil melebihi jumlah data, maka atur indeks item terakhir menjadi jumlah data
 	if endIndex > count {
 		endIndex = count
 	}
 
+	// Ambil data ONU yang sesuai dengan halaman yang diminta
 	paginatedData := onuInformationList[startIndex:endIndex]
 
 	fmt.Println(paginatedData)
 
-	return paginatedData, len(paginatedData)
+	// Kembalikan data halaman bersama dengan jumlah total data yang tersedia
+	return paginatedData, count
 }
