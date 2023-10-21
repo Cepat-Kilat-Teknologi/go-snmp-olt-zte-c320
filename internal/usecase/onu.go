@@ -25,13 +25,13 @@ type OnuUseCase interface {
 }
 
 type onuUsecase struct {
-	snmpRepository  repository.RepositorySNMP
+	snmpRepository  repository.SnmpInterface
 	redisRepository repository.OnuRedisRepo
 	cfg             *config.Config
 }
 
 func NewOnuUsecase(
-	snmpRepository repository.RepositorySNMP, redisRepository repository.OnuRedisRepo, cfg *config.Config,
+	snmpRepository repository.SnmpInterface, redisRepository repository.OnuRedisRepo, cfg *config.Config,
 ) OnuUseCase {
 	return &onuUsecase{
 		snmpRepository:  snmpRepository,
