@@ -3,9 +3,9 @@ package handler
 import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/megadata-dev/go-snmp-olt-c320/internal/usecase"
-	"github.com/megadata-dev/go-snmp-olt-c320/pkg/pagination"
-	"github.com/megadata-dev/go-snmp-olt-c320/pkg/utils"
+	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/usecase"
+	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/utils"
+	"github.com/megadata-dev/go-snmp-olt-zte-c320/pkg/pagination"
 	"net/http"
 	"strconv"
 )
@@ -30,36 +30,26 @@ func (o *OnuHandler) GetByGtGoIDAndPonID(w http.ResponseWriter, r *http.Request)
 	ponID := chi.URLParam(r, "pon_id")   // 1 - 8
 
 	gtGoIDInt, err := strconv.Atoi(gtGoID) // convert string to int
-	if err != nil {
-		utils.ErrorBadRequest(w, fmt.Errorf("gtgo_id must be 0 or 1")) // error 400
-		return
-	}
 
-	/*
-		Validate gtGoIDInt value
-		If gtGoIDInt is not 0 or 1, return error 400
-		example: http://localhost:8080/gtgo/2/pon/1
-	*/
-
-	if gtGoIDInt != 0 && gtGoIDInt != 1 {
-		utils.ErrorBadRequest(w, fmt.Errorf("gtgo_id must be 0 or 1")) // error 400
+	// Validate gtGoIDInt value and return error 400 if gtGoIDInt is not 0 or 1
+	if err != nil || (gtGoIDInt != 0 && gtGoIDInt != 1) {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'gtgo_id' parameter. It must be 0 or 1")) // error 400
 		return
 	}
 
 	ponIDInt, err := strconv.Atoi(ponID) // convert string to int
-	if err != nil {
-		utils.ErrorBadRequest(w, fmt.Errorf("pon_id must be between 1 and 8")) // error 400
+
+	// Validate ponIDInt value and return error 400 if ponIDInt is not between 1 and 8
+	if err != nil || ponIDInt < 1 || ponIDInt > 8 {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'pon_id' parameter. It must be between 1 and 8")) // error 400
 		return
 	}
 
-	/*
-		Validate ponIDInt value
-		If ponIDInt is not between 1 and 8, return error 400
-		example: http://localhost:8080/gtgo/0/pon/9
-	*/
+	query := r.URL.Query() // Get query parameters from the request
 
-	if ponIDInt < 1 || ponIDInt > 8 {
-		utils.ErrorBadRequest(w, fmt.Errorf("pon_id must be between 1 and 8")) // error 400
+	//Validate query parameters and return error 400 if query parameters is not "onu_id" or empty query parameters
+	if len(query) > 0 && query["onu_id"] == nil {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid query parameter")) // error 400
 		return
 	}
 
@@ -105,36 +95,18 @@ func (o *OnuHandler) GetByGtGoIDAndPonIDWithPaginate(w http.ResponseWriter, r *h
 	pageIndex, pageSize := pagination.GetPaginationParametersFromRequest(r)
 
 	gtGoIDInt, err := strconv.Atoi(gtGoID) // convert string to int
-	if err != nil {
-		utils.ErrorBadRequest(w, fmt.Errorf("gtgo_id must be 0 or 1")) // error 400
-		return
-	}
 
-	/*
-		Validate gtGoIDInt value
-		If gtGoIDInt is not 0 or 1, return error 400
-		example: http://localhost:8080/gtgo/2/pon/1
-	*/
-
-	if gtGoIDInt != 0 && gtGoIDInt != 1 {
-		utils.ErrorBadRequest(w, fmt.Errorf("gtgo_id must be 0 or 1")) // error 400
+	// Validate gtGoIDInt value and return error 400 if gtGoIDInt is not 0 or 1
+	if err != nil || (gtGoIDInt != 0 && gtGoIDInt != 1) {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'gtgo_id' parameter. It must be 0 or 1")) // error 400
 		return
 	}
 
 	ponIDInt, err := strconv.Atoi(ponID) // convert string to int
-	if err != nil {
-		utils.ErrorBadRequest(w, fmt.Errorf("pon_id must be between 1 and 8")) // error 400
-		return
-	}
 
-	/*
-		Validate ponIDInt value
-		If ponIDInt is not between 1 and 8, return error 400
-		example: http://localhost:8080/gtgo/0/pon/9
-	*/
-
-	if ponIDInt < 1 || ponIDInt > 8 {
-		utils.ErrorBadRequest(w, fmt.Errorf("pon_id must be between 1 and 8")) // error 400
+	// Validate ponIDInt value and return error 400 if ponIDInt is not between 1 and 8
+	if err != nil || ponIDInt < 1 || ponIDInt > 8 {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'pon_id' parameter. It must be between 1 and 8")) // error 400
 		return
 	}
 
@@ -179,53 +151,26 @@ func (o *OnuHandler) GetByGtGoIDPonIDAndOnuID(w http.ResponseWriter, r *http.Req
 	onuID := chi.URLParam(r, "onu_id")   // 1 - 128
 
 	gtGoIDInt, err := strconv.Atoi(gtGoID) // convert string to int
-	if err != nil {
-		utils.ErrorBadRequest(w, fmt.Errorf("gtgo_id must be 0 or 1")) // error 400
-		return
-	}
 
-	/*
-		Validate gtGoIDInt value
-		If gtGoIDInt is not 0 or 1, return error 400
-		example: http://localhost:8080/gtgo/2/pon/1/onu/1
-	*/
-
-	if gtGoIDInt != 0 && gtGoIDInt != 1 {
-		utils.ErrorBadRequest(w, fmt.Errorf("gtgo_id must be 0 or 1")) // error 400
+	// Validate gtGoIDInt value and return error 400 if gtGoIDInt is not 0 or 1
+	if err != nil || (gtGoIDInt != 0 && gtGoIDInt != 1) {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'gtgo_id' parameter. It must be 0 or 1")) // error 400
 		return
 	}
 
 	ponIDInt, err := strconv.Atoi(ponID) // convert string to int
-	if err != nil {
-		utils.ErrorBadRequest(w, fmt.Errorf("pon_id must be between 1 and 8")) // error 400
-		return
-	}
 
-	/*
-		Validate ponIDInt value
-		If ponIDInt is not between 1 and 8, return error 400
-		example: http://localhost:8080/gtgo/0/pon/9/onu/1
-	*/
-
-	if ponIDInt < 1 || ponIDInt > 8 {
-		utils.ErrorBadRequest(w, fmt.Errorf("pon_id must be between 1 and 8")) // error 400
+	// Validate ponIDInt value and return error 400 if ponIDInt is not between 1 and 8
+	if err != nil || ponIDInt < 1 || ponIDInt > 8 {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'pon_id' parameter. It must be between 1 and 8")) // error 400
 		return
 	}
 
 	onuIDInt, err := strconv.Atoi(onuID) // convert string to int
-	if err != nil {
-		utils.ErrorBadRequest(w, fmt.Errorf("onu_id must be between 1 and 128")) // error 400
-		return
-	}
 
-	/*
-		Validate onuIDInt value
-		If onuIDInt is not between 1 and 128, return error 400
-		example: http://localhost:8080/gtgo/0/pon/1/onu/129
-	*/
-
-	if onuIDInt < 1 || onuIDInt > 128 {
-		utils.ErrorBadRequest(w, fmt.Errorf("onu_id must be between 1 and 128")) // error 400
+	// Validate onuIDInt value and return error 400 if onuIDInt is not between 1 and 128
+	if err != nil || onuIDInt < 1 || onuIDInt > 128 {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'onu_id' parameter. It must be between 1 and 128")) // error 400
 		return
 	}
 
@@ -269,36 +214,18 @@ func (o *OnuHandler) GetEmptyOnuID(w http.ResponseWriter, r *http.Request) {
 	ponID := chi.URLParam(r, "pon_id")   // 1 - 8
 
 	gtGoIDInt, err := strconv.Atoi(gtGoID) // convert string to int
-	if err != nil {
-		utils.ErrorBadRequest(w, fmt.Errorf("gtgo_id must be 0 or 1")) // error 400
-		return
-	}
 
-	/*
-		Validate gtGoIDInt value
-		If gtGoIDInt is not 0 or 1, return error 400
-		example: http://localhost:8080/gtgo/2/pon/1
-	*/
-
-	if gtGoIDInt != 0 && gtGoIDInt != 1 {
-		utils.ErrorBadRequest(w, fmt.Errorf("gtgo_id must be 0 or 1")) // error 400
+	// Validate gtGoIDInt value and return error 400 if gtGoIDInt is not 0 or 1
+	if err != nil || (gtGoIDInt != 0 && gtGoIDInt != 1) {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'gtgo_id' parameter. It must be 0 or 1")) // error 400
 		return
 	}
 
 	ponIDInt, err := strconv.Atoi(ponID) // convert string to int
-	if err != nil {
-		utils.ErrorBadRequest(w, fmt.Errorf("pon_id must be between 1 and 8")) // error 400
-		return
-	}
 
-	/*
-		Validate ponIDInt value
-		If ponIDInt is not between 1 and 8, return error 400
-		example: http://localhost:8080/gtgo/0/pon/9
-	*/
-
-	if ponIDInt < 1 || ponIDInt > 8 {
-		utils.ErrorBadRequest(w, fmt.Errorf("pon_id must be between 1 and 8")) // error 400
+	// Validate ponIDInt value and return error 400 if ponIDInt is not between 1 and 8
+	if err != nil || ponIDInt < 1 || ponIDInt > 8 {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'pon_id' parameter. It must be between 1 and 8")) // error 400
 		return
 	}
 
@@ -315,6 +242,44 @@ func (o *OnuHandler) GetEmptyOnuID(w http.ResponseWriter, r *http.Request) {
 		Code:   http.StatusOK,  // 200
 		Status: "OK",           // "OK"
 		Data:   onuIDEmptyList, // data
+	}
+
+	utils.SendJSONResponse(w, http.StatusOK, response) // 200
+}
+
+func (o *OnuHandler) UpdateEmptyOnuID(w http.ResponseWriter, r *http.Request) {
+	gtGoID := chi.URLParam(r, "gtgo_id") // 0 or 1
+	ponID := chi.URLParam(r, "pon_id")   // 1 - 8
+
+	gtGoIDInt, err := strconv.Atoi(gtGoID) // convert string to int
+
+	// Validate gtGoIDInt value and return error 400 if gtGoIDInt is not 0 or 1
+	if err != nil || (gtGoIDInt != 0 && gtGoIDInt != 1) {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'gtgo_id' parameter. It must be 0 or 1")) // error 400
+		return
+	}
+
+	ponIDInt, err := strconv.Atoi(ponID) // convert string to int
+
+	// Validate ponIDInt value and return error 400 if ponIDInt is not between 1 and 8
+	if err != nil || ponIDInt < 1 || ponIDInt > 8 {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'pon_id' parameter. It must be between 1 and 8")) // error 400
+		return
+	}
+
+	// Call usecase to get data from SNMP
+	err = o.ponUsecase.UpdateEmptyOnuID(r.Context(), gtGoIDInt, ponIDInt)
+
+	if err != nil {
+		utils.ErrorInternalServerError(w, fmt.Errorf("cannot get data from snmp")) // error 500
+		return
+	}
+
+	// Convert result to JSON format according to WebResponse structure
+	response := utils.WebResponse{
+		Code:   http.StatusOK,                 // 200
+		Status: "OK",                          // "OK"
+		Data:   "Success Update Empty ONU_ID", // data
 	}
 
 	utils.SendJSONResponse(w, http.StatusOK, response) // 200

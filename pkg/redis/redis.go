@@ -1,7 +1,7 @@
 package redis
 
 import (
-	"github.com/megadata-dev/go-snmp-olt-c320/config"
+	"github.com/megadata-dev/go-snmp-olt-zte-c320/config"
 	"github.com/redis/go-redis/v9"
 	"time"
 )
