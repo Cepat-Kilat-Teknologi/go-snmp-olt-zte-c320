@@ -1,7 +1,7 @@
 version: '3'
 
 vars:
-  EXE: sumitroajiprabowo/go-snmp-olt-c320{{exeExt}}
+  EXE: sumitroajiprabowo/go-snmp-olt-zte-c320{{exeExt}}
 
 tasks:
   default:
@@ -9,7 +9,7 @@ tasks:
       - task: dev
 
   dev:
-    desc: Start the local environmen
+    desc: Start the local environment
     cmds:
       - docker-compose -f docker-compose.dev.yaml up -d && air -c .air.toml
 
@@ -65,17 +65,17 @@ tasks:
   docker-run:
     desc: Run docker image with tag latest
     cmds:
-      - docker run -d -p 8081:8081 --name go-snmp-olt-c320 {{.EXE}}:latest
+      - docker run -d -p 8081:8081 --name go-snmp-olt-zte-c320 {{.EXE}}:latest
 
   docker-stop:
     desc: Stop docker image with tag latest
     cmds:
-      - docker stop go-snmp-olt-c320
+      - docker stop go-snmp-olt-zte-c320
 
   docker-remove:
     desc: Remove docker image with tag latest
     cmds:
-      - docker rm go-snmp-olt-c320
+      - docker rm go-snmp-olt-zte-c320
 
   up:
     desc: Start the docker containers in the background
