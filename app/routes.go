@@ -5,8 +5,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	mdl "github.com/go-chi/chi/v5/middleware"
-	"github.com/megadata-dev/go-snmp-olt-c320/internal/handler"
-	"github.com/megadata-dev/go-snmp-olt-c320/internal/middleware"
+	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/handler"
+	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/middleware"
 )
 
 func loadRoutes(onuHandler *handler.OnuHandler) *chi.Mux {
@@ -28,11 +28,18 @@ func loadRoutes(onuHandler *handler.OnuHandler) *chi.Mux {
 		_ = write
 	})
 
-	router.Route("/gtgo", func(r chi.Router) {
+	// Create a group for /api/v1/
+	apiV1Group := chi.NewRouter()
+	router.Route("/api/v1", func(r chi.Router) {
+		r.Mount("/", apiV1Group)
+	})
+
+	apiV1Group.Route("/gtgo", func(r chi.Router) {
 		r.Get("/{gtgo_id}/pon/{pon_id}", onuHandler.GetByGtGoIDAndPonID)
-		//r.Get("/{gtgo_id}/pon/{pon_id}", onuHandler.GetByGtGoIDAndPonIDWithPaginate)
 		r.Get("/{gtgo_id}/pon/{pon_id}/onu/{onu_id}", onuHandler.GetByGtGoIDPonIDAndOnuID)
-		r.Get("/{gtgo_id}/pon/{pon_id}/empty", onuHandler.GetEmptyOnuID)
+		r.Get("/{gtgo_id}/pon/{pon_id}/onu_id/empty", onuHandler.GetEmptyOnuID)
+		r.Get("/{gtgo_id}/pon/{pon_id}/onu_id/update", onuHandler.UpdateEmptyOnuID)
+		r.Get("/{gtgo_id}/page/pon/{pon_id}", onuHandler.GetByGtGoIDAndPonIDWithPaginate)
 	})
 
 	return router
