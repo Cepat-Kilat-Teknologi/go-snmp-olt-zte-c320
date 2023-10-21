@@ -3,7 +3,7 @@ version: '3.9'
 services:
   app:
     restart: always
-    container_name: go-snmp-olt
+    container_name: go-snmp-olt-zte-c320
     build:
       context: .
       target: dev
@@ -11,4 +11,4 @@ services:
     volumes:
       - ./:/app
     ports:
-      - 8080:8080
+      - "8081:8081"
