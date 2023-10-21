@@ -25,15 +25,15 @@ func NewOnuHandler(ponUsecase usecase.OnuUseCase) *OnuHandler {
 	}
 }
 
-func (o *OnuHandler) GetByGtGoIDAndPonID(w http.ResponseWriter, r *http.Request) {
-	gtGoID := chi.URLParam(r, "gtgo_id") // 0 or 1
-	ponID := chi.URLParam(r, "pon_id")   // 1 - 8
+func (o *OnuHandler) GetByBoardIDAndPonID(w http.ResponseWriter, r *http.Request) {
+	boardID := chi.URLParam(r, "board_id") // 1 or 2
+	ponID := chi.URLParam(r, "pon_id")     // 1 - 8
 
-	gtGoIDInt, err := strconv.Atoi(gtGoID) // convert string to int
+	boardIDInt, err := strconv.Atoi(boardID) // convert string to int
 
-	// Validate gtGoIDInt value and return error 400 if gtGoIDInt is not 0 or 1
-	if err != nil || (gtGoIDInt != 0 && gtGoIDInt != 1) {
-		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'gtgo_id' parameter. It must be 0 or 1")) // error 400
+	// Validate boardIDInt value and return error 400 if boardIDInt is not 1 or 2
+	if err != nil || (boardIDInt != 1 && boardIDInt != 2) {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'board_id' parameter. It must be 1 or 2")) // error 400
 		return
 	}
 
@@ -54,7 +54,7 @@ func (o *OnuHandler) GetByGtGoIDAndPonID(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Call usecase to get data from SNMP
-	onuInfoList, err := o.ponUsecase.GetByGtGoIDAndPonID(r.Context(), gtGoIDInt, ponIDInt)
+	onuInfoList, err := o.ponUsecase.GetByBoardIDAndPonID(r.Context(), boardIDInt, ponIDInt)
 	if err != nil {
 		utils.ErrorInternalServerError(w, fmt.Errorf("cannot get data from snmp")) // error 500
 		return
@@ -81,24 +81,19 @@ func (o *OnuHandler) GetByGtGoIDAndPonID(w http.ResponseWriter, r *http.Request)
 
 }
 
-func (o *OnuHandler) GetByGtGoIDAndPonIDWithPaginate(w http.ResponseWriter, r *http.Request) {
+func (o *OnuHandler) GetByBoardIDAndPonIDWithPaginate(w http.ResponseWriter, r *http.Request) {
 
-	/*
-		Get value of "gtgo_id" and "pon_id" parameter from URL
-		Example: http://localhost:8080/gtgo/0/pon/1
-	*/
-
-	gtGoID := chi.URLParam(r, "gtgo_id") // 0 or 1
-	ponID := chi.URLParam(r, "pon_id")   // 1 - 8
+	boardID := chi.URLParam(r, "board_id") // 1 or 2
+	ponID := chi.URLParam(r, "pon_id")     // 1 - 8
 
 	// Get page and page size parameters from the request
 	pageIndex, pageSize := pagination.GetPaginationParametersFromRequest(r)
 
-	gtGoIDInt, err := strconv.Atoi(gtGoID) // convert string to int
+	boardIDInt, err := strconv.Atoi(boardID) // convert string to int
 
-	// Validate gtGoIDInt value and return error 400 if gtGoIDInt is not 0 or 1
-	if err != nil || (gtGoIDInt != 0 && gtGoIDInt != 1) {
-		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'gtgo_id' parameter. It must be 0 or 1")) // error 400
+	// Validate boardIDInt value and return error 400 if boardIDInt is not 1 or 2
+	if err != nil || (boardIDInt != 1 && boardIDInt != 2) {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'board_id' parameter. It must be 1 or 2")) // error 400
 		return
 	}
 
@@ -110,7 +105,7 @@ func (o *OnuHandler) GetByGtGoIDAndPonIDWithPaginate(w http.ResponseWriter, r *h
 		return
 	}
 
-	item, count := o.ponUsecase.GetByGtGoIDAndPonIDWithPagination(r.Context(), gtGoIDInt, ponIDInt, pageIndex, pageSize)
+	item, count := o.ponUsecase.GetByBoardIDAndPonIDWithPagination(r.Context(), boardIDInt, ponIDInt, pageIndex, pageSize)
 
 	/*
 		Validate item value
@@ -139,22 +134,17 @@ func (o *OnuHandler) GetByGtGoIDAndPonIDWithPaginate(w http.ResponseWriter, r *h
 	utils.SendJSONResponse(w, http.StatusOK, responsePagination) // 200
 }
 
-func (o *OnuHandler) GetByGtGoIDPonIDAndOnuID(w http.ResponseWriter, r *http.Request) {
+func (o *OnuHandler) GetByBoardIDPonIDAndOnuID(w http.ResponseWriter, r *http.Request) {
 
-	/*
-		Get value of "gtgo_id", "pon_id", and "onu_id" parameter from URL
-		Example: http://localhost:8080/gtgo/0/pon/1/onu/1
-	*/
+	boardID := chi.URLParam(r, "board_id") // 1 or 2
+	ponID := chi.URLParam(r, "pon_id")     // 1 - 8
+	onuID := chi.URLParam(r, "onu_id")     // 1 - 128
 
-	gtGoID := chi.URLParam(r, "gtgo_id") // 0 or 1
-	ponID := chi.URLParam(r, "pon_id")   // 1 - 8
-	onuID := chi.URLParam(r, "onu_id")   // 1 - 128
+	boardIDInt, err := strconv.Atoi(boardID) // convert string to int
 
-	gtGoIDInt, err := strconv.Atoi(gtGoID) // convert string to int
-
-	// Validate gtGoIDInt value and return error 400 if gtGoIDInt is not 0 or 1
-	if err != nil || (gtGoIDInt != 0 && gtGoIDInt != 1) {
-		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'gtgo_id' parameter. It must be 0 or 1")) // error 400
+	// Validate boardIDInt value and return error 400 if boardIDInt is not 1 or 2
+	if err != nil || (boardIDInt != 1 && boardIDInt != 2) {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'board_id' parameter. It must be 1 or 2")) // error 400
 		return
 	}
 
@@ -175,7 +165,7 @@ func (o *OnuHandler) GetByGtGoIDPonIDAndOnuID(w http.ResponseWriter, r *http.Req
 	}
 
 	// Call usecase to get data from SNMP
-	onuInfoList, err := o.ponUsecase.GetByGtGoIDPonIDAndOnuID(r.Context(), gtGoIDInt, ponIDInt, onuIDInt)
+	onuInfoList, err := o.ponUsecase.GetByBoardIDPonIDAndOnuID(r.Context(), boardIDInt, ponIDInt, onuIDInt)
 
 	if err != nil {
 		utils.ErrorInternalServerError(w, fmt.Errorf("cannot get data from snmp")) // error 500
@@ -184,11 +174,11 @@ func (o *OnuHandler) GetByGtGoIDPonIDAndOnuID(w http.ResponseWriter, r *http.Req
 
 	/*
 		Validate onuInfoList value
-		If onuInfoList.GTGO, onuInfoList.PON, and onuInfoList.ID is 0, return error 404
-		example: http://localhost:8080/gtgo/0/pon/1/onu/129
+		If onuInfoList.Board, onuInfoList.PON, and onuInfoList.ID is 0, return error 404
+		example: http://localhost:8080/board/1/pon/1/onu/129
 	*/
 
-	if onuInfoList.GTGO == 0 && onuInfoList.PON == 0 && onuInfoList.ID == 0 {
+	if onuInfoList.Board == 0 && onuInfoList.PON == 0 && onuInfoList.ID == 0 {
 		utils.ErrorNotFound(w, fmt.Errorf("data not found")) // error 404
 		return
 	}
@@ -205,19 +195,14 @@ func (o *OnuHandler) GetByGtGoIDPonIDAndOnuID(w http.ResponseWriter, r *http.Req
 
 func (o *OnuHandler) GetEmptyOnuID(w http.ResponseWriter, r *http.Request) {
 
-	/*
-		Get value of "gtgo_id" and "pon_id" parameter from URL
-		Example: http://localhost:8080/gtgo/0/pon/1
-	*/
+	boardID := chi.URLParam(r, "board_id") // 1 or 2
+	ponID := chi.URLParam(r, "pon_id")     // 1 - 8
 
-	gtGoID := chi.URLParam(r, "gtgo_id") // 0 or 1
-	ponID := chi.URLParam(r, "pon_id")   // 1 - 8
+	boardIDInt, err := strconv.Atoi(boardID) // convert string to int
 
-	gtGoIDInt, err := strconv.Atoi(gtGoID) // convert string to int
-
-	// Validate gtGoIDInt value and return error 400 if gtGoIDInt is not 0 or 1
-	if err != nil || (gtGoIDInt != 0 && gtGoIDInt != 1) {
-		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'gtgo_id' parameter. It must be 0 or 1")) // error 400
+	// Validate boardIDInt value and return error 400 if boardIDInt is not 1 or 2
+	if err != nil || (boardIDInt != 1 && boardIDInt != 2) {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'board_id' parameter. It must be 1 or 2")) // error 400
 		return
 	}
 
@@ -230,7 +215,7 @@ func (o *OnuHandler) GetEmptyOnuID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call usecase to get data from SNMP
-	onuIDEmptyList, err := o.ponUsecase.GetEmptyOnuID(r.Context(), gtGoIDInt, ponIDInt)
+	onuIDEmptyList, err := o.ponUsecase.GetEmptyOnuID(r.Context(), boardIDInt, ponIDInt)
 
 	if err != nil {
 		utils.ErrorInternalServerError(w, fmt.Errorf("cannot get data from snmp")) // error 500
@@ -248,14 +233,14 @@ func (o *OnuHandler) GetEmptyOnuID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (o *OnuHandler) UpdateEmptyOnuID(w http.ResponseWriter, r *http.Request) {
-	gtGoID := chi.URLParam(r, "gtgo_id") // 0 or 1
-	ponID := chi.URLParam(r, "pon_id")   // 1 - 8
+	boardID := chi.URLParam(r, "board_id") // 1 or 2
+	ponID := chi.URLParam(r, "pon_id")     // 1 - 8
 
-	gtGoIDInt, err := strconv.Atoi(gtGoID) // convert string to int
+	boardIDInt, err := strconv.Atoi(boardID) // convert string to int
 
-	// Validate gtGoIDInt value and return error 400 if gtGoIDInt is not 0 or 1
-	if err != nil || (gtGoIDInt != 0 && gtGoIDInt != 1) {
-		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'gtgo_id' parameter. It must be 0 or 1")) // error 400
+	// Validate boardIDInt value and return error 400 if boardIDInt is not 1 or 2
+	if err != nil || (boardIDInt != 1 && boardIDInt != 2) {
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'board_id' parameter. It must be 0 or 1")) // error 400
 		return
 	}
 
@@ -268,7 +253,7 @@ func (o *OnuHandler) UpdateEmptyOnuID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call usecase to get data from SNMP
-	err = o.ponUsecase.UpdateEmptyOnuID(r.Context(), gtGoIDInt, ponIDInt)
+	err = o.ponUsecase.UpdateEmptyOnuID(r.Context(), boardIDInt, ponIDInt)
 
 	if err != nil {
 		utils.ErrorInternalServerError(w, fmt.Errorf("cannot get data from snmp")) // error 500

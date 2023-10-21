@@ -15,12 +15,12 @@ import (
 )
 
 type OnuUseCase interface {
-	GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int) ([]model.ONUInfoPerGTGO, error)
-	GetByGtGoIDPonIDAndOnuID(ctx context.Context, gtGoID, ponID, onuID int) (model.ONUCustomerInfo, error)
-	GetEmptyOnuID(ctx context.Context, gtGoID, ponID int) ([]model.OnuID, error)
-	UpdateEmptyOnuID(ctx context.Context, gtGoID, ponID int) error
-	GetByGtGoIDAndPonIDWithPagination(ctx context.Context, gtGoID, ponID, page, pageSize int) (
-		[]model.ONUInfoPerGTGO, int,
+	GetByBoardIDAndPonID(ctx context.Context, boardID, ponID int) ([]model.ONUInfoPerBoard, error)
+	GetByBoardIDPonIDAndOnuID(ctx context.Context, boardID, ponID, onuID int) (model.ONUCustomerInfo, error)
+	GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]model.OnuID, error)
+	UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) error
+	GetByBoardIDAndPonIDWithPagination(ctx context.Context, boardID, ponID, page, pageSize int) (
+		[]model.ONUInfoPerBoard, int,
 	)
 }
 
@@ -40,7 +40,7 @@ func NewOnuUsecase(
 	}
 }
 
-func (u *onuUsecase) GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int) ([]model.ONUInfoPerGTGO, error) {
+func (u *onuUsecase) GetByBoardIDAndPonID(ctx context.Context, boardID, ponID int) ([]model.ONUInfoPerBoard, error) {
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
 	defer cancel()                                          // Cancel context when function is done
@@ -54,9 +54,9 @@ func (u *onuUsecase) GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int)
 		onuStatusOID       string // ONU Status OID variable
 	)
 
-	// Determine base OID and other OID based on GTGO ID and PON ID
-	switch gtGoID {
-	case 0: // GTGO 0
+	// Determine base OID and other OID based on Board ID and PON ID
+	switch boardID {
+	case 1: // Board 1
 		switch ponID {
 		case 1: // PON 1
 			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
@@ -117,7 +117,7 @@ func (u *onuUsecase) GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int)
 		default: // Invalid PON ID
 			return nil, errors.New("invalid PON ID") // Return error
 		}
-	case 1: // GTGO 1
+	case 2: // Board 2
 		switch ponID {
 		case 1: // PON 1
 			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
@@ -178,12 +178,12 @@ func (u *onuUsecase) GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int)
 		default: // Invalid PON ID
 			return nil, errors.New("invalid PON ID") // Return error
 		}
-	default: // Invalid GTGO ID
-		return nil, errors.New("invalid GTGO ID") // Return error
+	default: // Invalid Board ID
+		return nil, errors.New("invalid Board ID") // Return error
 	}
 
 	// Redis Key
-	redisKey := "gtgo_" + strconv.Itoa(gtGoID) + "_pon_" + strconv.Itoa(ponID)
+	redisKey := "board_" + strconv.Itoa(boardID) + "_pon_" + strconv.Itoa(ponID)
 
 	// Try to get data from Redis using GetONUInfoList method with context and Redis key as parameter
 	cachedOnuData, err := u.redisRepository.GetONUInfoList(ctx, redisKey)
@@ -191,13 +191,13 @@ func (u *onuUsecase) GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int)
 		return cachedOnuData, nil // Return cached data if error is nil and cached data is not nil
 	}
 
-	var onuInformationList []model.ONUInfoPerGTGO // Create slice to store ONU informationList
+	var onuInformationList []model.ONUInfoPerBoard // Create slice to store ONU informationList
 
 	snmpDataMap := make(map[string]gosnmp.SnmpPDU) // Create map to store SNMP data
 
 	/*
 		Perform SNMP Walk to get ONU ID and ONU Name
-		based on GTGO ID and PON ID using snmpRepository Walk method
+		based on Board ID and PON ID using snmpRepository Walk method
 		with context and OID as parameter
 	*/
 	err = u.snmpRepository.Walk(baseOID+onuIDNameOID, func(pdu gosnmp.SnmpPDU) error {
@@ -215,11 +215,11 @@ func (u *onuUsecase) GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int)
 		it to slice of ONU information list to be returned later to caller function as response data
 	*/
 	for _, pdu := range snmpDataMap {
-		onuInfo := model.ONUInfoPerGTGO{
-			GTGO: gtGoID,                         // Set GTGO ID to ONU onuInfo struct GTGO field
-			PON:  ponID,                          // Set PON ID to ONU onuInfo  struct PON field
-			ID:   utils.ExtractIDOnuID(pdu.Name), // Set ONU ID to ONU onuInfo struct ID field
-			Name: utils.ExtractName(pdu.Value),   // Set ONU Name to ONU onuInfo struct Name field
+		onuInfo := model.ONUInfoPerBoard{
+			Board: boardID,                        // Set Board ID to ONU onuInfo struct Board field
+			PON:   ponID,                          // Set PON ID to ONU onuInfo  struct PON field
+			ID:    utils.ExtractIDOnuID(pdu.Name), // Set ONU ID to ONU onuInfo struct ID field
+			Name:  utils.ExtractName(pdu.Value),   // Set ONU Name to ONU onuInfo struct Name field
 		}
 
 		// Get ONU Type based on ONU ID and ONU Type OID and store it to ONU onuInfo struct
@@ -263,7 +263,7 @@ func (u *onuUsecase) GetByGtGoIDAndPonID(ctx context.Context, gtGoID, ponID int)
 	return onuInformationList, nil // Return ONU information list and nil error
 }
 
-func (u *onuUsecase) GetByGtGoIDPonIDAndOnuID(ctx context.Context, gtGoID, ponID, onuID int) (
+func (u *onuUsecase) GetByBoardIDPonIDAndOnuID(ctx context.Context, boardID, ponID, onuID int) (
 	model.ONUCustomerInfo, error,
 ) {
 	// Create context with timeout 30 seconds
@@ -282,9 +282,9 @@ func (u *onuUsecase) GetByGtGoIDPonIDAndOnuID(ctx context.Context, gtGoID, ponID
 		onuDescriptionOID  string // ONU Description OID variable
 	)
 
-	// Determine base OID and other OID based on GTGO ID and PON ID
-	switch gtGoID {
-	case 0: // GTGO 0
+	// Determine base OID and other OID based on Board ID and PON ID
+	switch boardID {
+	case 1: // Board 1
 		switch ponID {
 		case 1: // PON 1
 			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID
@@ -369,7 +369,7 @@ func (u *onuUsecase) GetByGtGoIDPonIDAndOnuID(ctx context.Context, gtGoID, ponID
 		default: // Invalid PON ID
 			return model.ONUCustomerInfo{}, errors.New("invalid PON ID") // Return error
 		}
-	case 1: // GTGO 1
+	case 2: // Board 2
 		switch ponID {
 		case 1: // PON 1
 			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID
@@ -454,8 +454,8 @@ func (u *onuUsecase) GetByGtGoIDPonIDAndOnuID(ctx context.Context, gtGoID, ponID
 		default: // Invalid PON ID
 			return model.ONUCustomerInfo{}, errors.New("invalid PON ID") // Return error
 		}
-	default: // Invalid GTGO ID
-		return model.ONUCustomerInfo{}, errors.New("invalid GTGO ID") // Return error
+	default: // Invalid Board ID
+		return model.ONUCustomerInfo{}, errors.New("invalid Board ID") // Return error
 	}
 
 	// Create a slice of ONUCustomerInfo
@@ -482,10 +482,10 @@ func (u *onuUsecase) GetByGtGoIDPonIDAndOnuID(ctx context.Context, gtGoID, ponID
 	*/
 	for _, pdu := range snmpDataMap {
 		onuInfo := model.ONUCustomerInfo{
-			GTGO: gtGoID,                         // Set GTGO ID to ONU onuInfo struct GTGO field
-			PON:  ponID,                          // Set PON ID to ONU onuInfo  struct PON field
-			ID:   utils.ExtractIDOnuID(pdu.Name), // Set ONU ID (extracted from SNMP PDU) to onuInfo variable (ONU ID)
-			Name: utils.ExtractName(pdu.Value),   // Set ONU Name (extracted from SNMP PDU) to onuInfo variable (ONU Name)
+			Board: boardID,                        // Set Board ID to ONU onuInfo struct Board field
+			PON:   ponID,                          // Set PON ID to ONU onuInfo  struct PON field
+			ID:    utils.ExtractIDOnuID(pdu.Name), // Set ONU ID (extracted from SNMP PDU) to onuInfo variable (ONU ID)
+			Name:  utils.ExtractName(pdu.Value),   // Set ONU Name (extracted from SNMP PDU) to onuInfo variable (ONU Name)
 		}
 
 		// Get Data ONU Type from SNMP Walk using getONUType method
@@ -690,7 +690,7 @@ func (u *onuUsecase) getDescription(ctx context.Context, onuDescriptionOID, onuI
 	return onuDescription, nil // Return ONU Description
 }
 
-func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, gtGoID, ponID int) ([]model.OnuID, error) {
+func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]model.OnuID, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
 	defer cancel()
 
@@ -699,9 +699,9 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, gtGoID, ponID int) ([]mo
 		onuIDNameOID string // ONU ID Name OID variable
 	)
 
-	// Determine base OID and other OID based on GTGO ID and PON ID
-	switch gtGoID {
-	case 0: // GTGO 0
+	// Determine base OID and other OID based on Board ID and PON ID
+	switch boardID {
+	case 1: // Board 1
 		switch ponID {
 		case 1: // PON 1
 			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
@@ -730,7 +730,7 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, gtGoID, ponID int) ([]mo
 		default: // Invalid PON ID
 			return nil, errors.New("invalid PON ID") // Return error
 		}
-	case 1: // GTGO 1
+	case 2: // Board 2
 		switch ponID {
 		case 1: // PON 1
 			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
@@ -759,12 +759,12 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, gtGoID, ponID int) ([]mo
 		default: // Invalid PON ID
 			return nil, errors.New("invalid PON ID") // Return error
 		}
-	default: // Invalid GTGO ID
-		return nil, errors.New("invalid GTGO ID") // Return error
+	default: // Invalid Board ID
+		return nil, errors.New("invalid Board ID") // Return error
 	}
 
 	//Redis Key
-	redisKey := "gtgo_" + strconv.Itoa(gtGoID) + "_pon_" + strconv.Itoa(ponID) + "_empty_onu_id"
+	redisKey := "board_" + strconv.Itoa(boardID) + "_pon_" + strconv.Itoa(ponID) + "_empty_onu_id"
 
 	//Try to get data from Redis using GetOnuIDCtx method with context and Redis key as parameter
 	cachedOnuData, err := u.redisRepository.GetOnuIDCtx(ctx, redisKey)
@@ -783,9 +783,9 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, gtGoID, ponID int) ([]mo
 
 		// Append ONU information to the emptyOnuIDList
 		emptyOnuIDList = append(emptyOnuIDList, model.OnuID{
-			GTGO: gtGoID,  // Set GTGO ID to ONU onuInfo struct GTGO field
-			PON:  ponID,   // Set PON ID to ONU onuInfo  struct PON field
-			ID:   idOnuID, // Set ONU ID (extracted from SNMP PDU) to onuInfo variable (ONU ID)
+			Board: boardID, // Set Board ID to ONU onuInfo struct Board field
+			PON:   ponID,   // Set PON ID to ONU onuInfo  struct PON field
+			ID:    idOnuID, // Set ONU ID (extracted from SNMP PDU) to onuInfo variable (ONU ID)
 		})
 
 		return nil
@@ -803,16 +803,16 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, gtGoID, ponID int) ([]mo
 		numbersToRemove[onuInfo.ID] = true
 	}
 
-	// Create a new slice to hold the gtgo_id, pon_id and onu_id data without the numbers to be deleted
+	// Create a new slice to hold the board_id, pon_id and onu_id data without the numbers to be deleted
 	emptyOnuIDList = emptyOnuIDList[:0]
 
 	// Loop through 128 numbers to get the numbers to be deleted
 	for i := 1; i <= 128; i++ {
 		if _, ok := numbersToRemove[i]; !ok {
 			emptyOnuIDList = append(emptyOnuIDList, model.OnuID{
-				GTGO: gtGoID, // Set GTGO ID to ONU onuInfo struct GTGO field
-				PON:  ponID,  // Set PON ID to ONU onuInfo  struct PON field
-				ID:   i,      // Number 1-128 that is not in the numbers to be deleted
+				Board: boardID, // Set Board ID to ONU onuInfo struct Board field
+				PON:   ponID,   // Set PON ID to ONU onuInfo  struct PON field
+				ID:    i,       // Number 1-128 that is not in the numbers to be deleted
 			})
 		}
 	}
@@ -831,7 +831,7 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, gtGoID, ponID int) ([]mo
 	return emptyOnuIDList, nil
 }
 
-func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, gtGoID, ponID int) error {
+func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) error {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
 	defer cancel()
 
@@ -840,9 +840,9 @@ func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, gtGoID, ponID int) er
 		onuIDNameOID string // ONU ID Name OID variable
 	)
 
-	// Determine base OID and other OID based on GTGO ID and PON ID
-	switch gtGoID {
-	case 0: // GTGO 0
+	// Determine base OID and other OID based on Board ID and PON ID
+	switch boardID {
+	case 1: // Board 1
 		switch ponID {
 		case 1: // PON 1
 			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
@@ -871,7 +871,7 @@ func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, gtGoID, ponID int) er
 		default: // Invalid PON ID
 			return errors.New("invalid PON ID") // Return error
 		}
-	case 1: // GTGO 1
+	case 2: // Board 2
 		switch ponID {
 		case 1: // PON 1
 			baseOID = u.cfg.OltCfg.BaseOID1              // Base OID variable get from config
@@ -900,8 +900,8 @@ func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, gtGoID, ponID int) er
 		default: // Invalid PON ID
 			return errors.New("invalid PON ID") // Return error
 		}
-	default: // Invalid GTGO ID
-		return errors.New("invalid GTGO ID") // Return error
+	default: // Invalid Board ID
+		return errors.New("invalid Board ID") // Return error
 	}
 
 	// Perform SNMP Walk to get ONU ID and ONU Name
@@ -914,9 +914,9 @@ func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, gtGoID, ponID int) er
 
 		// Append ONU information to the emptyOnuIDList
 		emptyOnuIDList = append(emptyOnuIDList, model.OnuID{
-			GTGO: gtGoID,  // Set GTGO ID to ONU onuInfo struct GTGO field
-			PON:  ponID,   // Set PON ID to ONU onuInfo  struct PON field
-			ID:   idOnuID, // Set ONU ID (extracted from SNMP PDU) to onuInfo variable (ONU ID)
+			Board: boardID, // Set Board ID to ONU onuInfo struct Board field
+			PON:   ponID,   // Set PON ID to ONU onuInfo  struct PON field
+			ID:    idOnuID, // Set ONU ID (extracted from SNMP PDU) to onuInfo variable (ONU ID)
 		})
 
 		return nil
@@ -934,16 +934,16 @@ func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, gtGoID, ponID int) er
 		numbersToRemove[onuInfo.ID] = true
 	}
 
-	// Create a new slice to hold the gtgo_id, pon_id and onu_id data without the numbers to be deleted
+	// Create a new slice to hold the board_id, pon_id and onu_id data without the numbers to be deleted
 	emptyOnuIDList = emptyOnuIDList[:0]
 
 	// Loop through 128 numbers to get the numbers to be deleted
 	for i := 1; i <= 128; i++ {
 		if _, ok := numbersToRemove[i]; !ok {
 			emptyOnuIDList = append(emptyOnuIDList, model.OnuID{
-				GTGO: gtGoID, // Set GTGO ID to ONU onuInfo struct GTGO field
-				PON:  ponID,  // Set PON ID to ONU onuInfo  struct PON field
-				ID:   i,      // Number 1-128 that is not in the numbers to be deleted
+				Board: boardID, // Set Board ID to ONU onuInfo struct Board field
+				PON:   ponID,   // Set PON ID to ONU onuInfo  struct PON field
+				ID:    i,       // Number 1-128 that is not in the numbers to be deleted
 			})
 		}
 	}
@@ -954,7 +954,7 @@ func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, gtGoID, ponID int) er
 	})
 
 	//Redis Key
-	redisKey := "gtgo_" + strconv.Itoa(gtGoID) + "_pon_" + strconv.Itoa(ponID) + "_empty_onu_id"
+	redisKey := "board_" + strconv.Itoa(boardID) + "_pon_" + strconv.Itoa(ponID) + "_empty_onu_id"
 
 	// Set data to Redis using SetOnuIDCtx method with context, Redis key and data as parameter
 	err = u.redisRepository.SetOnuIDCtx(ctx, redisKey, 300, emptyOnuIDList)
@@ -965,11 +965,11 @@ func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, gtGoID, ponID int) er
 	return nil
 }
 
-func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
-	ctx context.Context, gtGoID, ponID, pageIndex,
+func (u *onuUsecase) GetByBoardIDAndPonIDWithPagination(
+	ctx context.Context, boardID, ponID, pageIndex,
 	pageSize int,
 ) (
-	[]model.ONUInfoPerGTGO,
+	[]model.ONUInfoPerBoard,
 	int,
 ) {
 
@@ -985,9 +985,9 @@ func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
 		onuStatusOID       string // ONU Status OID variable
 	)
 
-	// Determine base OID and other OID based on GTGO ID and PON ID
-	switch gtGoID {
-	case 0: // GTGO 0
+	// Determine base OID and other OID based on Board ID and PON ID
+	switch boardID {
+	case 1: // Board 1
 		switch ponID {
 		case 1: // PON 1
 			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
@@ -1048,7 +1048,7 @@ func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
 		default: // Invalid PON ID
 			return nil, 0 // Return error
 		}
-	case 1: // GTGO 1
+	case 2: // Board 2
 		switch ponID {
 		case 1: // PON 1
 			baseOID = u.cfg.OltCfg.BaseOID1                          // Base OID variable get from config
@@ -1109,11 +1109,11 @@ func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
 		default: // Invalid PON ID
 			return nil, 0 // Return error
 		}
-	default: // Invalid GTGO ID
+	default: // Invalid Board ID
 		return nil, 0 // Return error
 	}
 
-	fmt.Println("gtgoID: ", gtGoID)
+	fmt.Println("boardID: ", boardID)
 	fmt.Println("ponID:", ponID)
 	fmt.Println("pageIndex:", pageIndex)
 	fmt.Println("pageSize:", pageSize)
@@ -1121,7 +1121,7 @@ func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
 	var onlyOnuIDList []model.OnuOnlyID // Create slice to store ONU ID list
 
 	//// Redis Key
-	//redisKey := "gtgo_" + strconv.Itoa(gtGoID) + "_pon_" + strconv.Itoa(ponID)
+	//redisKey := "board_" + strconv.Itoa(boardID) + "_pon_" + strconv.Itoa(ponID)
 	//
 	//// Try to get data from Redis using GetOnuIDCtx method with context and Redis key as parameter
 	//cachedOnuData, err := u.redisRepository.GetOnlyOnuIDCtx(ctx, redisKey)
@@ -1134,7 +1134,7 @@ func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
 
 	// If data not exist in Redis, then get data from SNMP
 	if len(onlyOnuIDList) == 0 {
-		// Perform SNMP Walk to get ONU ID and ONU Name based on GTGO ID and PON ID using snmpRepository Walk method
+		// Perform SNMP Walk to get ONU ID and ONU Name based on Board ID and PON ID using snmpRepository Walk method
 		// with context and OID as parameter
 		err := u.snmpRepository.Walk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
 			// Append ONU information to the onlyOnuIDList
@@ -1180,7 +1180,7 @@ func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
 	// print onuIDList
 	fmt.Println("onlyOnuIDListPages", onlyOnuIDList)
 
-	var onuInformationList []model.ONUInfoPerGTGO // Create slice to store ONU informationList
+	var onuInformationList []model.ONUInfoPerBoard // Create slice to store ONU informationList
 	var count int
 
 	var currentIndex int
@@ -1189,14 +1189,14 @@ func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
 	for _, onuInfo := range onlyOnuIDList {
 		if currentIndex >= startIndex {
 
-			// Perform SNMP Walk to get ONU Type based on GTGO ID, PON ID and ONU ID using snmpRepository Walk method
+			// Perform SNMP Walk to get ONU Type based on Board ID, PON ID and ONU ID using snmpRepository Walk method
 			// with context and OID as parameter
 			err := u.snmpRepository.Walk(baseOID+onuTypeOID+"."+strconv.Itoa(onuInfo.ID), func(pdu gosnmp.SnmpPDU) error {
 				// Append ONU information to the onuInformationList
-				onuInformationList = append(onuInformationList, model.ONUInfoPerGTGO{
-					GTGO: gtGoID, // Set GTGO ID to ONU onuInfo struct GTGO field
-					PON:  ponID,  // Set PON ID to ONU onuInfo  struct PON field
-					ID:   onuInfo.ID,
+				onuInformationList = append(onuInformationList, model.ONUInfoPerBoard{
+					Board: boardID, // Set Board ID to ONU onuInfo struct Board field
+					PON:   ponID,   // Set PON ID to ONU onuInfo  struct PON field
+					ID:    onuInfo.ID,
 				})
 				return nil
 			})
@@ -1205,7 +1205,8 @@ func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
 				return nil, 0 // Return error if error is not nil
 			}
 
-			// Perform SNMP Walk to get ONU Serial Number based on GTGO ID, PON ID and ONU ID using snmpRepository Walk method
+			// Perform SNMP Walk to get ONU Serial Number based on Board ID,
+			//PON ID and ONU ID using snmpRepository Walk method
 			// with context and OID as parameter
 			err = u.snmpRepository.Walk(baseOID+onuSerialNumberOID+"."+strconv.Itoa(onuInfo.ID), func(pdu gosnmp.SnmpPDU) error {
 				// Set ONU Serial Number to ONU onuInfo struct SerialNumber field
@@ -1217,7 +1218,8 @@ func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
 				return nil, 0 // Return error if error is not nil
 			}
 
-			// Perform SNMP Walk to get ONU RX Power based on GTGO ID, PON ID and ONU ID using snmpRepository Walk method
+			// Perform SNMP Walk to get ONU RX Power based on Board ID,
+			//PON ID and ONU ID using snmpRepository Walk method
 			// with context and OID as parameter
 			err = u.snmpRepository.Walk(baseOID+onuRxPowerOID+"."+strconv.Itoa(onuInfo.ID), func(pdu gosnmp.SnmpPDU) error {
 				// Set ONU RX Power to ONU onuInfo struct RXPower field
@@ -1229,7 +1231,7 @@ func (u *onuUsecase) GetByGtGoIDAndPonIDWithPagination(
 				return nil, 0 // Return error if error is not nil
 			}
 
-			// Perform SNMP Walk to get ONU Status based on GTGO ID, PON ID and ONU ID using snmpRepository Walk method
+			// Perform SNMP Walk to get ONU Status based on Board ID, PON ID and ONU ID using snmpRepository Walk method
 			// with context and OID as parameter
 			err = u.snmpRepository.Walk(baseOID+onuStatusOID+"."+strconv.Itoa(onuInfo.ID), func(pdu gosnmp.SnmpPDU) error {
 				// Set ONU Status to ONU onuInfo struct Status field

@@ -24,8 +24,8 @@ type OnuRedisRepo interface {
 	GetOnuIDCtx(ctx context.Context, key string) ([]model.OnuID, error)
 	SetOnuIDCtx(ctx context.Context, key string, seconds int, onuId []model.OnuID) error
 	DeleteOnuIDCtx(ctx context.Context, key string) error
-	SaveONUInfoList(ctx context.Context, key string, seconds int, onuInfoList []model.ONUInfoPerGTGO) error
-	GetONUInfoList(ctx context.Context, key string) ([]model.ONUInfoPerGTGO, error)
+	SaveONUInfoList(ctx context.Context, key string, seconds int, onuInfoList []model.ONUInfoPerBoard) error
+	GetONUInfoList(ctx context.Context, key string) ([]model.ONUInfoPerBoard, error)
 	GetOnlyOnuIDCtx(ctx context.Context, key string) ([]model.OnuOnlyID, error)
 	SaveOnlyOnuIDCtx(ctx context.Context, key string, seconds int, onuId []model.OnuOnlyID) error
 }
@@ -70,7 +70,7 @@ func (r *onuRedisRepo) DeleteOnuIDCtx(ctx context.Context, key string) error {
 
 // SaveONUInfoList is a method to save onu info list to redis
 func (r *onuRedisRepo) SaveONUInfoList(
-	ctx context.Context, key string, seconds int, onuInfoList []model.ONUInfoPerGTGO,
+	ctx context.Context, key string, seconds int, onuInfoList []model.ONUInfoPerBoard,
 ) error {
 	onuBytes, err := json.Marshal(onuInfoList)
 	if err != nil {
@@ -85,13 +85,13 @@ func (r *onuRedisRepo) SaveONUInfoList(
 }
 
 // GetONUInfoList is a method to get onu info list from redis
-func (r *onuRedisRepo) GetONUInfoList(ctx context.Context, key string) ([]model.ONUInfoPerGTGO, error) {
+func (r *onuRedisRepo) GetONUInfoList(ctx context.Context, key string) ([]model.ONUInfoPerBoard, error) {
 	onuBytes, err := r.redisClient.Get(ctx, key).Bytes()
 	if err != nil {
 		return nil, errors.Wrap(err, "onuRedisRepo.GetONUInfoList.redisClient.Get")
 	}
 
-	var onuInfoList []model.ONUInfoPerGTGO
+	var onuInfoList []model.ONUInfoPerBoard
 	if err := json.Unmarshal(onuBytes, &onuInfoList); err != nil {
 		return nil, errors.Wrap(err, "onuRedisRepo.GetONUInfoList.json.Unmarshal")
 	}

@@ -1,8 +1,11 @@
-### List All ONU by GTGO and OLT PON
-GET localhost:8081/gtgo/2/pon/7
+### List All ONU by Board and OLT PON
+GET localhost:8081/api/v1/board/2/pon/7
 
-### Get ONU by GTGO and OLT PON and ONU ID
-GET localhost:8081/gtgo/1/pon/8/onu/11
+### Get ONU by Board and OLT PON and ONU ID
+GET localhost:8081/api/v1/board/1/pon/8/onu/11
 
-### Get Empty ONU ID by GTGO and OLT PON
-GET localhost:8081/gtgo/1/pon/8/empty
+### Get Empty ONU ID by Board and OLT PON
+GET localhost:8081/api/v1/board/1/pon/8/onu_id/empty
+
+### Update Empty ONU ID by Board and OLT PON on Redis
+GET localhost:8081/api/v1/board/1/pon/8/onu_id/update

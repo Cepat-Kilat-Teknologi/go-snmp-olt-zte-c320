@@ -34,12 +34,12 @@ func loadRoutes(onuHandler *handler.OnuHandler) *chi.Mux {
 		r.Mount("/", apiV1Group)
 	})
 
-	apiV1Group.Route("/gtgo", func(r chi.Router) {
-		r.Get("/{gtgo_id}/pon/{pon_id}", onuHandler.GetByGtGoIDAndPonID)
-		r.Get("/{gtgo_id}/pon/{pon_id}/onu/{onu_id}", onuHandler.GetByGtGoIDPonIDAndOnuID)
-		r.Get("/{gtgo_id}/pon/{pon_id}/onu_id/empty", onuHandler.GetEmptyOnuID)
-		r.Get("/{gtgo_id}/pon/{pon_id}/onu_id/update", onuHandler.UpdateEmptyOnuID)
-		r.Get("/{gtgo_id}/page/pon/{pon_id}", onuHandler.GetByGtGoIDAndPonIDWithPaginate)
+	apiV1Group.Route("/board", func(r chi.Router) {
+		r.Get("/{board_id}/pon/{pon_id}", onuHandler.GetByBoardIDAndPonID)
+		r.Get("/{board_id}/pon/{pon_id}/onu/{onu_id}", onuHandler.GetByBoardIDPonIDAndOnuID)
+		r.Get("/{board_id}/pon/{pon_id}/onu_id/empty", onuHandler.GetEmptyOnuID)
+		r.Get("/{board_id}/pon/{pon_id}/onu_id/update", onuHandler.UpdateEmptyOnuID)
+		r.Get("/{board_id}/page/pon/{pon_id}", onuHandler.GetByBoardIDAndPonIDWithPaginate)
 	})
 
 	return router

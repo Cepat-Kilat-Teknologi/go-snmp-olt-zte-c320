@@ -5,8 +5,8 @@ type ONUInfo struct {
 	Name string `json:"name"`
 }
 
-type ONUInfoPerGTGO struct {
-	GTGO         int    `json:"gtgo"`
+type ONUInfoPerBoard struct {
+	Board        int    `json:"board"`
 	PON          int    `json:"pon"`
 	ID           int    `json:"onu_id"`
 	Name         string `json:"name"`
@@ -17,7 +17,7 @@ type ONUInfoPerGTGO struct {
 }
 
 type ONUCustomerInfo struct {
-	GTGO         int    `json:"gtgo"`
+	Board        int    `json:"board"`
 	PON          int    `json:"pon"`
 	ID           int    `json:"onu_id"`
 	Name         string `json:"name"`
@@ -31,9 +31,9 @@ type ONUCustomerInfo struct {
 }
 
 type OnuID struct {
-	GTGO int `json:"gtgo"`
-	PON  int `json:"pon"`
-	ID   int `json:"onu_id"`
+	Board int `json:"board"`
+	PON   int `json:"pon"`
+	ID    int `json:"onu_id"`
 }
 
 type OnuOnlyID struct {
