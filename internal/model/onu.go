@@ -1,5 +1,17 @@
 package model
 
+type OltConfig struct {
+	BaseOID            string
+	OnuIDNameOID       string
+	OnuTypeOID         string
+	OnuSerialNumberOID string
+	OnuRxPowerOID      string
+	OnuTxPowerOID      string
+	OnuStatusOID       string
+	OnuIPAddressOID    string
+	OnuDescriptionOID  string
+}
+
 type ONUInfo struct {
 	ID   string `json:"onu_id"`
 	Name string `json:"name"`
@@ -38,4 +50,11 @@ type OnuID struct {
 
 type OnuOnlyID struct {
 	ID int `json:"onu_id"`
+}
+
+type SNMPWalkTask struct {
+	BaseOID   string
+	TargetOID string
+	BoardID   int
+	PON       int
 }

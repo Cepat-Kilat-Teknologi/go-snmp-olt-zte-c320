@@ -17,6 +17,14 @@ type Config struct {
 	Board1Pon6 Board1Pon6
 	Board1Pon7 Board1Pon7
 	Board1Pon8 Board1Pon8
+	Board2Pon1 Board2Pon1
+	Board2Pon2 Board2Pon2
+	Board2Pon3 Board2Pon3
+	Board2Pon4 Board2Pon4
+	Board2Pon5 Board2Pon5
+	Board2Pon6 Board2Pon6
+	Board2Pon7 Board2Pon7
+	Board2Pon8 Board2Pon8
 }
 
 type SnmpConfig struct {
@@ -120,6 +128,94 @@ type Board1Pon7 struct {
 }
 
 type Board1Pon8 struct {
+	OnuIDNameOID       string `mapstructure:"onu_id_name"`
+	OnuTypeOID         string `mapstructure:"onu_type"`
+	OnuSerialNumberOID string `mapstructure:"onu_serial_number"`
+	OnuRxPowerOID      string `mapstructure:"onu_rx_power"`
+	OnuTxPowerOID      string `mapstructure:"onu_tx_power"`
+	OnuStatusOID       string `mapstructure:"onu_status_id"`
+	OnuIPAddressOID    string `mapstructure:"onu_ip_address"`
+	OnuDescriptionOID  string `mapstructure:"onu_description"`
+}
+
+type Board2Pon1 struct {
+	OnuIDNameOID       string `mapstructure:"onu_id_name"`
+	OnuTypeOID         string `mapstructure:"onu_type"`
+	OnuSerialNumberOID string `mapstructure:"onu_serial_number"`
+	OnuRxPowerOID      string `mapstructure:"onu_rx_power"`
+	OnuTxPowerOID      string `mapstructure:"onu_tx_power"`
+	OnuStatusOID       string `mapstructure:"onu_status_id"`
+	OnuIPAddressOID    string `mapstructure:"onu_ip_address"`
+	OnuDescriptionOID  string `mapstructure:"onu_description"`
+}
+
+type Board2Pon2 struct {
+	OnuIDNameOID       string `mapstructure:"onu_id_name"`
+	OnuTypeOID         string `mapstructure:"onu_type"`
+	OnuSerialNumberOID string `mapstructure:"onu_serial_number"`
+	OnuRxPowerOID      string `mapstructure:"onu_rx_power"`
+	OnuTxPowerOID      string `mapstructure:"onu_tx_power"`
+	OnuStatusOID       string `mapstructure:"onu_status_id"`
+	OnuIPAddressOID    string `mapstructure:"onu_ip_address"`
+	OnuDescriptionOID  string `mapstructure:"onu_description"`
+}
+
+type Board2Pon3 struct {
+	OnuIDNameOID       string `mapstructure:"onu_id_name"`
+	OnuTypeOID         string `mapstructure:"onu_type"`
+	OnuSerialNumberOID string `mapstructure:"onu_serial_number"`
+	OnuRxPowerOID      string `mapstructure:"onu_rx_power"`
+	OnuTxPowerOID      string `mapstructure:"onu_tx_power"`
+	OnuStatusOID       string `mapstructure:"onu_status_id"`
+	OnuIPAddressOID    string `mapstructure:"onu_ip_address"`
+	OnuDescriptionOID  string `mapstructure:"onu_description"`
+}
+
+type Board2Pon4 struct {
+	OnuIDNameOID       string `mapstructure:"onu_id_name"`
+	OnuTypeOID         string `mapstructure:"onu_type"`
+	OnuSerialNumberOID string `mapstructure:"onu_serial_number"`
+	OnuRxPowerOID      string `mapstructure:"onu_rx_power"`
+	OnuTxPowerOID      string `mapstructure:"onu_tx_power"`
+	OnuStatusOID       string `mapstructure:"onu_status_id"`
+	OnuIPAddressOID    string `mapstructure:"onu_ip_address"`
+	OnuDescriptionOID  string `mapstructure:"onu_description"`
+}
+
+type Board2Pon5 struct {
+	OnuIDNameOID       string `mapstructure:"onu_id_name"`
+	OnuTypeOID         string `mapstructure:"onu_type"`
+	OnuSerialNumberOID string `mapstructure:"onu_serial_number"`
+	OnuRxPowerOID      string `mapstructure:"onu_rx_power"`
+	OnuTxPowerOID      string `mapstructure:"onu_tx_power"`
+	OnuStatusOID       string `mapstructure:"onu_status_id"`
+	OnuIPAddressOID    string `mapstructure:"onu_ip_address"`
+	OnuDescriptionOID  string `mapstructure:"onu_description"`
+}
+
+type Board2Pon6 struct {
+	OnuIDNameOID       string `mapstructure:"onu_id_name"`
+	OnuTypeOID         string `mapstructure:"onu_type"`
+	OnuSerialNumberOID string `mapstructure:"onu_serial_number"`
+	OnuRxPowerOID      string `mapstructure:"onu_rx_power"`
+	OnuTxPowerOID      string `mapstructure:"onu_tx_power"`
+	OnuStatusOID       string `mapstructure:"onu_status_id"`
+	OnuIPAddressOID    string `mapstructure:"onu_ip_address"`
+	OnuDescriptionOID  string `mapstructure:"onu_description"`
+}
+
+type Board2Pon7 struct {
+	OnuIDNameOID       string `mapstructure:"onu_id_name"`
+	OnuTypeOID         string `mapstructure:"onu_type"`
+	OnuSerialNumberOID string `mapstructure:"onu_serial_number"`
+	OnuRxPowerOID      string `mapstructure:"onu_rx_power"`
+	OnuTxPowerOID      string `mapstructure:"onu_tx_power"`
+	OnuStatusOID       string `mapstructure:"onu_status_id"`
+	OnuIPAddressOID    string `mapstructure:"onu_ip_address"`
+	OnuDescriptionOID  string `mapstructure:"onu_description"`
+}
+
+type Board2Pon8 struct {
 	OnuIDNameOID       string `mapstructure:"onu_id_name"`
 	OnuTypeOID         string `mapstructure:"onu_type"`
 	OnuSerialNumberOID string `mapstructure:"onu_serial_number"`
