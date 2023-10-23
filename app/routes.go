@@ -35,7 +35,7 @@ func loadRoutes(onuHandler *handler.OnuHandler) http.Handler {
 	return router
 }
 
-func rootHandler(w http.ResponseWriter, r *http.Request) {
+func rootHandler(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("Hello, this is the root endpoint!"))
 }
