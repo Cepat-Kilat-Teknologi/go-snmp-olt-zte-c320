@@ -11,7 +11,6 @@ import (
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/utils"
 	"sort"
 	"strconv"
-	"time"
 )
 
 type OnuUseCase interface {
@@ -22,6 +21,7 @@ type OnuUseCase interface {
 	GetByBoardIDAndPonIDWithPagination(ctx context.Context, boardID, ponID, page, pageSize int) (
 		[]model.ONUInfoPerBoard, int,
 	)
+	GetEmptyOnuIDQueue(ctx context.Context, boardID, ponID int) ([]model.OnuID, error)
 }
 
 type onuUsecase struct {
@@ -252,8 +252,8 @@ func (u *onuUsecase) getOltConfig(boardID, ponID int) (*model.OltConfig, error) 
 
 func (u *onuUsecase) GetByBoardIDAndPonID(ctx context.Context, boardID, ponID int) ([]model.ONUInfoPerBoard, error) {
 
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
-	defer cancel()                                          // Cancel context when function is done
+	ctx, cancel := context.WithCancel(context.Background()) // Create context with cancel function to cancel context
+	defer cancel()                                          // Defer cancel function to be called later
 
 	// Get OLT config based on Board ID and PON ID
 	oltConfig, err := u.getOltConfig(boardID, ponID)
@@ -346,7 +346,7 @@ func (u *onuUsecase) GetByBoardIDPonIDAndOnuID(ctx context.Context, boardID, pon
 	model.ONUCustomerInfo, error,
 ) {
 	// Create context with timeout 30 seconds
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel() // Cancel context when function is done
 
 	// Get OLT config based on Board ID and PON ID
@@ -437,7 +437,7 @@ func (u *onuUsecase) getONUType(ctx context.Context, OnuTypeOID, onuID string) (
 
 	var onuType string // Variable to store ONU Type
 
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
+	ctx, cancel := context.WithCancel(context.Background()) // Create context with timeout 30 seconds
 	defer cancel()                                          // Cancel context when function is done
 
 	baseOID := u.cfg.OltCfg.BaseOID2 // Base OID variable get from config
@@ -459,7 +459,7 @@ func (u *onuUsecase) getSerialNumber(ctx context.Context, OnuSerialNumberOID, on
 
 	var onuSerialNumber string // Variable to store ONU Serial Number
 
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
+	ctx, cancel := context.WithCancel(context.Background()) // Create context with timeout 30 seconds
 	defer cancel()                                          // Cancel context when function is done
 
 	baseOID := u.cfg.OltCfg.BaseOID1 // Base OID variable get from config
@@ -481,7 +481,7 @@ func (u *onuUsecase) getRxPower(ctx context.Context, OnuRxPowerOID, onuID string
 
 	var onuRxPower string // Variable to store ONU RX Power
 
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
+	ctx, cancel := context.WithCancel(context.Background()) // Create context with timeout 30 seconds
 	defer cancel()                                          // Cancel context when function is done
 
 	baseOID := u.cfg.OltCfg.BaseOID1 // Base OID variable get from config
@@ -503,7 +503,7 @@ func (u *onuUsecase) getTxPower(ctx context.Context, OnuTxPowerOID, onuID string
 
 	var onuTxPower string // Variable to store ONU TX Power
 
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
+	ctx, cancel := context.WithCancel(context.Background()) // Create context with timeout 30 seconds
 	defer cancel()                                          // Cancel context when function is done
 
 	baseOID := u.cfg.OltCfg.BaseOID2 // Base OID variable get from config
@@ -525,7 +525,7 @@ func (u *onuUsecase) getStatus(ctx context.Context, OnuStatusOID, onuID string) 
 
 	var onuStatus string // Variable to store ONU Status
 
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
+	ctx, cancel := context.WithCancel(context.Background()) // Create context with timeout 30 seconds
 	defer cancel()                                          // Cancel context when function is done
 
 	baseOID := u.cfg.OltCfg.BaseOID1 // Base OID variable get from config
@@ -547,7 +547,7 @@ func (u *onuUsecase) getIPAddress(ctx context.Context, OnuIPAddressOID, onuID st
 
 	var onuIPAddress string // Variable to store ONU IP Address
 
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
+	ctx, cancel := context.WithCancel(context.Background()) // Create context with timeout 30 seconds
 	defer cancel()                                          // Cancel context when function is done
 
 	baseOID := u.cfg.OltCfg.BaseOID2 // Base OID variable get from config
@@ -569,7 +569,7 @@ func (u *onuUsecase) getDescription(ctx context.Context, OnuDescriptionOID, onuI
 
 	var onuDescription string // Variable to store ONU Description
 
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
+	ctx, cancel := context.WithCancel(context.Background()) // Create context with timeout 30 seconds
 	defer cancel()                                          // Cancel context when function is done
 
 	baseOID := u.cfg.OltCfg.BaseOID1 // Base OID variable get from config
@@ -588,7 +588,7 @@ func (u *onuUsecase) getDescription(ctx context.Context, OnuDescriptionOID, onuI
 }
 
 func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]model.OnuID, error) {
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
+	ctx, cancel := context.WithCancel(context.Background()) // Create context with timeout 30 seconds
 	defer cancel()
 
 	// Get OLT config based on Board ID and PON ID
@@ -666,7 +666,7 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]m
 }
 
 func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) error {
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
+	ctx, cancel := context.WithCancel(context.Background()) // Create context with timeout 30 seconds
 	defer cancel()
 
 	// Get OLT config based on Board ID and PON ID
@@ -744,7 +744,7 @@ func (u *onuUsecase) GetByBoardIDAndPonIDWithPagination(
 	int,
 ) {
 
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // Create context with timeout 30 seconds
+	ctx, cancel := context.WithCancel(context.Background()) // Create context with timeout 30 seconds
 	defer cancel()                                          // Cancel context when function is done
 
 	// Get OLT config based on Board ID and PON ID
@@ -920,4 +920,78 @@ func (u *onuUsecase) GetByBoardIDAndPonIDWithPagination(
 
 	// Kembalikan data halaman bersama dengan jumlah total data yang tersedia
 	return paginatedData, count
+}
+
+func (u *onuUsecase) GetEmptyOnuIDQueue(ctx context.Context, boardID, ponID int) ([]model.OnuID, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Generate the Redis key
+	redisKey := fmt.Sprintf("board_%d_pon_%d_empty_onu_id", boardID, ponID)
+
+	// Try to get data from Redis
+	cachedOnuData, err := u.redisRepository.GetOnuIDCtx(ctx, redisKey)
+	if err == nil && cachedOnuData != nil {
+		return cachedOnuData, nil
+	}
+
+	// Get OLT config based on Board ID and PON ID
+	oltConfig, err := u.getOltConfig(boardID, ponID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Perform SNMP Walk to get ONU ID and ONU Name
+	snmpOID := oltConfig.BaseOID + oltConfig.OnuIDNameOID
+	emptyOnuIDList := make([]model.OnuID, 0)
+
+	// Perform SNMP Walk using snmpRepository Walk method with timeout context parameter
+	err = u.snmpRepository.Walk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
+		idOnuID := utils.ExtractIDOnuID(pdu.Name)
+		emptyOnuIDList = append(emptyOnuIDList, model.OnuID{
+			Board: boardID,
+			PON:   ponID,
+			ID:    idOnuID,
+		})
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a map to store numbers to be deleted
+	numbersToRemove := make(map[int]bool)
+
+	// Loop through emptyOnuIDList to get the numbers to be deleted
+	for _, onuInfo := range emptyOnuIDList {
+		numbersToRemove[onuInfo.ID] = true
+	}
+
+	// Create a new slice to hold the board_id, pon_id, and onu_id data without the numbers to be deleted
+	var filteredEmptyOnuIDList []model.OnuID
+
+	// Loop through 128 numbers to get the numbers to be deleted
+	for i := 1; i <= 128; i++ {
+		if _, ok := numbersToRemove[i]; !ok {
+			filteredEmptyOnuIDList = append(filteredEmptyOnuIDList, model.OnuID{
+				Board: boardID,
+				PON:   ponID,
+				ID:    i,
+			})
+		}
+	}
+
+	// Set data to Redis
+	err = u.redisRepository.SetOnuIDCtx(ctx, redisKey, 300, filteredEmptyOnuIDList)
+	if err != nil {
+		return nil, err
+	}
+
+	// Sort by ID ascending
+	sort.Slice(filteredEmptyOnuIDList, func(i, j int) bool {
+		return filteredEmptyOnuIDList[i].ID < filteredEmptyOnuIDList[j].ID
+	})
+
+	return filteredEmptyOnuIDList, nil
 }
