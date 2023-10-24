@@ -6,6 +6,7 @@ import (
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/usecase"
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/utils"
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/pkg/pagination"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"strconv"
 )
@@ -28,13 +29,17 @@ func NewOnuHandler(ponUsecase usecase.OnuUseCase) *OnuHandler {
 }
 
 func (o *OnuHandler) GetByBoardIDAndPonID(w http.ResponseWriter, r *http.Request) {
+
 	boardID := chi.URLParam(r, "board_id") // 1 or 2
 	ponID := chi.URLParam(r, "pon_id")     // 1 - 8
 
 	boardIDInt, err := strconv.Atoi(boardID) // convert string to int
 
+	log.Info().Msg("Received a request to GetByBoardIDAndPonID")
+
 	// Validate boardIDInt value and return error 400 if boardIDInt is not 1 or 2
 	if err != nil || (boardIDInt != 1 && boardIDInt != 2) {
+		log.Error().Err(err).Msg("Invalid 'board_id' parameter")
 		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'board_id' parameter. It must be 1 or 2")) // error 400
 		return
 	}
@@ -43,14 +48,18 @@ func (o *OnuHandler) GetByBoardIDAndPonID(w http.ResponseWriter, r *http.Request
 
 	// Validate ponIDInt value and return error 400 if ponIDInt is not between 1 and 8
 	if err != nil || ponIDInt < 1 || ponIDInt > 8 {
+		log.Error().Err(err).Msg("Invalid 'pon_id' parameter")
 		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'pon_id' parameter. It must be between 1 and 8")) // error 400
 		return
 	}
 
 	query := r.URL.Query() // Get query parameters from the request
 
+	log.Debug().Interface("query_parameters", query).Msg("Received query parameters")
+
 	//Validate query parameters and return error 400 if query parameters is not "onu_id" or empty query parameters
 	if len(query) > 0 && query["onu_id"] == nil {
+		log.Error().Msg("Invalid query parameter")
 		utils.ErrorBadRequest(w, fmt.Errorf("invalid query parameter")) // error 400
 		return
 	}
@@ -58,9 +67,12 @@ func (o *OnuHandler) GetByBoardIDAndPonID(w http.ResponseWriter, r *http.Request
 	// Call usecase to get data from SNMP
 	onuInfoList, err := o.ponUsecase.GetByBoardIDAndPonID(r.Context(), boardIDInt, ponIDInt)
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to get data from SNMP")
 		utils.ErrorInternalServerError(w, fmt.Errorf("cannot get data from snmp")) // error 500
 		return
 	}
+
+	log.Info().Msg("Successfully retrieved data from SNMP")
 
 	/*
 		Validate onuInfoList value
@@ -68,6 +80,7 @@ func (o *OnuHandler) GetByBoardIDAndPonID(w http.ResponseWriter, r *http.Request
 	*/
 
 	if len(onuInfoList) == 0 {
+		log.Warn().Msg("Data not found")
 		utils.ErrorNotFound(w, fmt.Errorf("data not found")) // error 404
 		return
 	}
@@ -93,8 +106,11 @@ func (o *OnuHandler) GetByBoardIDAndPonIDWithPaginate(w http.ResponseWriter, r *
 
 	boardIDInt, err := strconv.Atoi(boardID) // convert string to int
 
+	log.Info().Msg("Received a request to GetByBoardIDAndPonIDWithPaginate")
+
 	// Validate boardIDInt value and return error 400 if boardIDInt is not 1 or 2
 	if err != nil || (boardIDInt != 1 && boardIDInt != 2) {
+		log.Error().Err(err).Msg("Invalid 'board_id' parameter")
 		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'board_id' parameter. It must be 1 or 2")) // error 400
 		return
 	}
@@ -103,6 +119,7 @@ func (o *OnuHandler) GetByBoardIDAndPonIDWithPaginate(w http.ResponseWriter, r *
 
 	// Validate ponIDInt value and return error 400 if ponIDInt is not between 1 and 8
 	if err != nil || ponIDInt < 1 || ponIDInt > 8 {
+		log.Error().Err(err).Msg("Invalid 'pon_id' parameter")
 		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'pon_id' parameter. It must be between 1 and 8")) // error 400
 		return
 	}
@@ -115,6 +132,7 @@ func (o *OnuHandler) GetByBoardIDAndPonIDWithPaginate(w http.ResponseWriter, r *
 	*/
 
 	if len(item) == 0 {
+		log.Error().Msg("Data not found")
 		utils.ErrorNotFound(w, fmt.Errorf("data not found")) // error 404
 		return
 	}
@@ -144,8 +162,11 @@ func (o *OnuHandler) GetByBoardIDPonIDAndOnuID(w http.ResponseWriter, r *http.Re
 
 	boardIDInt, err := strconv.Atoi(boardID) // convert string to int
 
+	log.Info().Msg("Received a request to GetByBoardIDPonIDAndOnuID")
+
 	// Validate boardIDInt value and return error 400 if boardIDInt is not 1 or 2
 	if err != nil || (boardIDInt != 1 && boardIDInt != 2) {
+		log.Error().Err(err).Msg("Invalid 'board_id' parameter")
 		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'board_id' parameter. It must be 1 or 2")) // error 400
 		return
 	}
@@ -154,6 +175,7 @@ func (o *OnuHandler) GetByBoardIDPonIDAndOnuID(w http.ResponseWriter, r *http.Re
 
 	// Validate ponIDInt value and return error 400 if ponIDInt is not between 1 and 8
 	if err != nil || ponIDInt < 1 || ponIDInt > 8 {
+		log.Error().Err(err).Msg("Invalid 'pon_id' parameter")
 		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'pon_id' parameter. It must be between 1 and 8")) // error 400
 		return
 	}
@@ -162,6 +184,7 @@ func (o *OnuHandler) GetByBoardIDPonIDAndOnuID(w http.ResponseWriter, r *http.Re
 
 	// Validate onuIDInt value and return error 400 if onuIDInt is not between 1 and 128
 	if err != nil || onuIDInt < 1 || onuIDInt > 128 {
+		log.Error().Err(err).Msg("Invalid 'onu_id' parameter")
 		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'onu_id' parameter. It must be between 1 and 128")) // error 400
 		return
 	}
@@ -170,9 +193,12 @@ func (o *OnuHandler) GetByBoardIDPonIDAndOnuID(w http.ResponseWriter, r *http.Re
 	onuInfoList, err := o.ponUsecase.GetByBoardIDPonIDAndOnuID(r.Context(), boardIDInt, ponIDInt, onuIDInt)
 
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to get data from SNMP")
 		utils.ErrorInternalServerError(w, fmt.Errorf("cannot get data from snmp")) // error 500
 		return
 	}
+
+	log.Info().Msg("Successfully retrieved data from SNMP")
 
 	/*
 		Validate onuInfoList value
@@ -181,6 +207,7 @@ func (o *OnuHandler) GetByBoardIDPonIDAndOnuID(w http.ResponseWriter, r *http.Re
 	*/
 
 	if onuInfoList.Board == 0 && onuInfoList.PON == 0 && onuInfoList.ID == 0 {
+		log.Error().Msg("Data not found")
 		utils.ErrorNotFound(w, fmt.Errorf("data not found")) // error 404
 		return
 	}
@@ -202,8 +229,11 @@ func (o *OnuHandler) GetEmptyOnuID(w http.ResponseWriter, r *http.Request) {
 
 	boardIDInt, err := strconv.Atoi(boardID) // convert string to int
 
+	log.Info().Msg("Received a request to GetEmptyOnuID")
+
 	// Validate boardIDInt value and return error 400 if boardIDInt is not 1 or 2
 	if err != nil || (boardIDInt != 1 && boardIDInt != 2) {
+		log.Error().Err(err).Msg("Invalid 'board_id' parameter")
 		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'board_id' parameter. It must be 1 or 2")) // error 400
 		return
 	}
@@ -212,6 +242,7 @@ func (o *OnuHandler) GetEmptyOnuID(w http.ResponseWriter, r *http.Request) {
 
 	// Validate ponIDInt value and return error 400 if ponIDInt is not between 1 and 8
 	if err != nil || ponIDInt < 1 || ponIDInt > 8 {
+		log.Error().Err(err).Msg("Invalid 'pon_id' parameter")
 		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'pon_id' parameter. It must be between 1 and 8")) // error 400
 		return
 	}
@@ -220,9 +251,12 @@ func (o *OnuHandler) GetEmptyOnuID(w http.ResponseWriter, r *http.Request) {
 	onuIDEmptyList, err := o.ponUsecase.GetEmptyOnuID(r.Context(), boardIDInt, ponIDInt)
 
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to get data from SNMP")
 		utils.ErrorInternalServerError(w, fmt.Errorf("cannot get data from snmp")) // error 500
 		return
 	}
+
+	log.Info().Msg("Successfully retrieved data from SNMP")
 
 	// Convert result to JSON format according to WebResponse structure
 	response := utils.WebResponse{
@@ -240,8 +274,11 @@ func (o *OnuHandler) UpdateEmptyOnuID(w http.ResponseWriter, r *http.Request) {
 
 	boardIDInt, err := strconv.Atoi(boardID) // convert string to int
 
+	log.Info().Msg("Received a request to UpdateEmptyOnuID")
+
 	// Validate boardIDInt value and return error 400 if boardIDInt is not 1 or 2
 	if err != nil || (boardIDInt != 1 && boardIDInt != 2) {
+		log.Error().Err(err).Msg("Invalid 'board_id' parameter")
 		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'board_id' parameter. It must be 0 or 1")) // error 400
 		return
 	}
@@ -250,6 +287,7 @@ func (o *OnuHandler) UpdateEmptyOnuID(w http.ResponseWriter, r *http.Request) {
 
 	// Validate ponIDInt value and return error 400 if ponIDInt is not between 1 and 8
 	if err != nil || ponIDInt < 1 || ponIDInt > 8 {
+		log.Error().Err(err).Msg("Invalid 'pon_id' parameter")
 		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'pon_id' parameter. It must be between 1 and 8")) // error 400
 		return
 	}
@@ -258,9 +296,12 @@ func (o *OnuHandler) UpdateEmptyOnuID(w http.ResponseWriter, r *http.Request) {
 	err = o.ponUsecase.UpdateEmptyOnuID(r.Context(), boardIDInt, ponIDInt)
 
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to get data from SNMP")
 		utils.ErrorInternalServerError(w, fmt.Errorf("cannot get data from snmp")) // error 500
 		return
 	}
+
+	log.Info().Msg("Successfully retrieved data from SNMP")
 
 	// Convert result to JSON format according to WebResponse structure
 	response := utils.WebResponse{
