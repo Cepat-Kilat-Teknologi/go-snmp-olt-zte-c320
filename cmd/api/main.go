@@ -2,9 +2,8 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/app"
-	"log"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
@@ -15,7 +14,8 @@ func main() {
 	go func() {
 		err := server.Start(ctx)
 		if err != nil {
-			log.Fatalf("Failed to start app: %v", err)
+			log.Fatal().Err(err).Msg("Failed to start server")
+			cancel()
 		}
 	}()
 
@@ -26,7 +26,7 @@ func main() {
 	// Wait for a signal to gracefully stop the application.
 	select {
 	case <-ctx.Done():
-		// Application was gracefully stopped
-		fmt.Println("Application has been gracefully stopped.")
+		// Application was gracefully stopped or an error occurred
+		log.Error().Err(ctx.Err()).Msg("Application was gracefully stopped or an error occurred")
 	}
 }
