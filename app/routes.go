@@ -2,17 +2,25 @@ package app
 
 import (
 	"github.com/go-chi/chi/v5"
-	mdl "github.com/go-chi/chi/v5/middleware"
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/handler"
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/middleware"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"net/http"
+	"os"
 )
 
 func loadRoutes(onuHandler *handler.OnuHandler) http.Handler {
+	// Initialize logger
+	l := log.Output(zerolog.ConsoleWriter{
+		Out: os.Stdout,
+	})
+
+	// Initialize router using chi
 	router := chi.NewRouter()
 
 	// Middleware for logging requests
-	router.Use(mdl.Logger)
+	router.Use(middleware.Logger(l))
 
 	// Middleware for CORS
 	router.Use(middleware.CorsMiddleware())
