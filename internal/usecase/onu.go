@@ -292,27 +292,25 @@ func (u *onuUsecase) GetByBoardIDAndPonID(ctx context.Context, boardID, ponID in
 	log.Info().Msg("Get All ONU Information from SNMP Walk Board ID: " + strconv.Itoa(
 		boardID) + " and PON ID: " + strconv.Itoa(ponID)) // Log info message to logger
 
-	//err = u.snmpRepository.BulkWalk(oltConfig.BaseOID+oltConfig.OnuIDNameOID, func(pdu gosnmp.SnmpPDU) error {
-	//	// Store SNMP data to map with ONU ID as key and PDU as value to be used later
-	//	snmpDataMap[utils.ExtractONUID(pdu.Name)] = pdu // Extract ONU ID from SNMP PDU Name and use it as key in map
-	//	return nil                                      // Return nil error
-	//})
-	//
-	//if err != nil {
-	//	return nil, err
-	//}
+	err = u.snmpRepository.BulkWalk(oltConfig.BaseOID+oltConfig.OnuIDNameOID, func(pdu gosnmp.SnmpPDU) error {
+		// Store SNMP data to map with ONU ID as key and PDU as value to be used later
+		snmpDataMap[utils.ExtractONUID(pdu.Name)] = pdu // Extract ONU ID from SNMP PDU Name and use it as key in map
+		return nil                                      // Return nil error
+	})
 
-	pduList, err := u.snmpRepository.BulkWalkAll(oltConfig.BaseOID + oltConfig.OnuIDNameOID)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, pdu := range pduList {
-		// Store SNMP data to map with ONU ID as key and PDU as value to be used later
-		snmpDataMap[utils.ExtractONUID(pdu.Name)] = pdu // Extract ONU ID from SNMP PDU Name and use it as key in map
-	}
-
-	fmt.Println("snmpDataMap", snmpDataMap)
+	//pduList, err := u.snmpRepository.BulkWalkAll(oltConfig.BaseOID + oltConfig.OnuIDNameOID)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//for _, pdu := range pduList {
+	//	// Store SNMP data to map with ONU ID as key and PDU as value to be used later
+	//	snmpDataMap[utils.ExtractONUID(pdu.Name)] = pdu // Extract ONU ID from SNMP PDU Name and use it as key in map
+	//}
 
 	/*
 		Loop through SNMP data map to get ONU information based on ONU ID and ONU Name stored in map before and store
@@ -359,7 +357,7 @@ func (u *onuUsecase) GetByBoardIDAndPonID(ctx context.Context, boardID, ponID in
 	})
 
 	// Save ONU information list to Redis 12 hours
-	err = u.redisRepository.SaveONUInfoList(ctx, redisKey, 100, onuInformationList)
+	err = u.redisRepository.SaveONUInfoList(ctx, redisKey, 300, onuInformationList)
 
 	log.Info().Msg("Save ONU Information to Redis with Key: " + redisKey) // Log info message to logger
 
@@ -477,15 +475,20 @@ func (u *onuUsecase) getONUType(ctx context.Context, OnuTypeOID, onuID string) (
 
 	baseOID := u.cfg.OltCfg.BaseOID2 // Base OID variable get from config
 
-	// Perform SNMP Walk to get ONU Type using snmpRepository Walk method with timeout context parameter
-	err := u.snmpRepository.Walk(baseOID+OnuTypeOID+"."+onuID, func(pdu gosnmp.SnmpPDU) error {
-		onuType = utils.ExtractName(pdu.Value) // Extract ONU Type from SNMP PDU Value
-		return nil
-	})
-
+	// Perform SNMP Get to get ONU Type using snmpRepository Get method with timeout context parameter
+	oids := []string{baseOID + OnuTypeOID + "." + onuID}
+	result, err := u.snmpRepository.Get(oids)
 	if err != nil {
-		log.Error().Msg("Failed to perform SNMP Walk get ONU Type: " + err.Error()) // Log error message to logger
-		return "", errors.New("failed to perform SNMP Walk")                        // Return error
+		log.Error().Msg("Failed to perform SNMP Get to get ONU Type: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Get")                           // Return error
+	}
+
+	// Check if the result contains the expected OID
+	if len(result.Variables) > 0 {
+		onuType = utils.ExtractName(result.Variables[0].Value) // Extract ONU Type from the result
+	} else {
+		log.Error().Msg("Failed to get ONU Type: No variables in the response")
+		return "", errors.New("no variables in the response")
 	}
 
 	return onuType, nil // Return ONU Type
@@ -500,15 +503,20 @@ func (u *onuUsecase) getSerialNumber(ctx context.Context, OnuSerialNumberOID, on
 
 	baseOID := u.cfg.OltCfg.BaseOID1 // Base OID variable get from config
 
-	// Perform SNMP Walk to get ONU Serial Number using snmpRepository Walk method with timeout context parameter
-	err := u.snmpRepository.Walk(baseOID+OnuSerialNumberOID+"."+onuID, func(pdu gosnmp.SnmpPDU) error {
-		onuSerialNumber = utils.ExtractSerialNumber(pdu.Value) // Extract ONU Serial Number from SNMP PDU Value
-		return nil
-	})
-
+	// Perform SNMP Get to get ONU Serial Number using snmpRepository Get method with timeout context parameter
+	oids := []string{baseOID + OnuSerialNumberOID + "." + onuID}
+	result, err := u.snmpRepository.Get(oids)
 	if err != nil {
-		log.Error().Msg("Failed to perform SNMP Walk get serial number: " + err.Error()) // Log error message to logger
-		return "", errors.New("failed to perform SNMP Walk")                             // Return error
+		log.Error().Msg("Failed to perform SNMP Get for serial number: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Get")                             // Return error
+	}
+
+	// Check if the result contains the expected OID
+	if len(result.Variables) > 0 {
+		onuSerialNumber = utils.ExtractSerialNumber(result.Variables[0].Value) // Extract ONU Serial Number from the result
+	} else {
+		log.Error().Msg("Failed to get ONU Serial Number: No variables in the response")
+		return "", errors.New("no variables in the response")
 	}
 
 	return onuSerialNumber, nil // Return ONU Serial Number
@@ -523,15 +531,20 @@ func (u *onuUsecase) getRxPower(ctx context.Context, OnuRxPowerOID, onuID string
 
 	baseOID := u.cfg.OltCfg.BaseOID1 // Base OID variable get from config
 
-	// Perform SNMP Walk to get ONU RX Power using snmpRepository Walk method with timeout context parameter
-	err := u.snmpRepository.Walk(baseOID+OnuRxPowerOID+"."+onuID+"."+"1", func(pdu gosnmp.SnmpPDU) error {
-		onuRxPower, _ = utils.ConvertAndMultiply(pdu.Value) // Extract ONU RX Power from SNMP PDU Value
-		return nil
-	})
-
+	// Perform SNMP Get to get ONU RX Power using snmpRepository Get method with timeout context parameter
+	oids := []string{baseOID + OnuRxPowerOID + "." + onuID + ".1"}
+	result, err := u.snmpRepository.Get(oids)
 	if err != nil {
-		log.Error().Msg("Failed to perform SNMP Walk get RX Power: " + err.Error()) // Log error message to logger
-		return "", errors.New("failed to perform SNMP Walk")                        // Return error
+		log.Error().Msg("Failed to perform SNMP Get for RX Power: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Get")                        // Return error
+	}
+
+	// Check if the result contains the expected OID
+	if len(result.Variables) > 0 {
+		onuRxPower, _ = utils.ConvertAndMultiply(result.Variables[0].Value) // Extract ONU RX Power from the result
+	} else {
+		log.Error().Msg("Failed to get ONU RX Power: No variables in the response")
+		return "", errors.New("no variables in the response")
 	}
 
 	return onuRxPower, nil // Return ONU RX Power
@@ -546,15 +559,20 @@ func (u *onuUsecase) getTxPower(ctx context.Context, OnuTxPowerOID, onuID string
 
 	baseOID := u.cfg.OltCfg.BaseOID2 // Base OID variable get from config
 
-	// Perform SNMP Walk to get ONU TX Power using snmpRepository Walk method with timeout context parameter
-	err := u.snmpRepository.Walk(baseOID+OnuTxPowerOID+"."+onuID+"."+"1", func(pdu gosnmp.SnmpPDU) error {
-		onuTxPower, _ = utils.ConvertAndMultiply(pdu.Value) // Extract ONU TX Power from SNMP PDU Value
-		return nil
-	})
-
+	// Perform SNMP Get to get ONU TX Power using snmpRepository Get method with timeout context parameter
+	oids := []string{baseOID + OnuTxPowerOID + "." + onuID + ".1"}
+	result, err := u.snmpRepository.Get(oids)
 	if err != nil {
-		log.Error().Msg("Failed to perform SNMP Walk get TX Power: " + err.Error()) // Log error message to logger
-		return "", errors.New("failed to perform SNMP Walk")                        // Return error
+		log.Error().Msg("Failed to perform SNMP Get for TX Power: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Get")                        // Return error
+	}
+
+	// Check if the result contains the expected OID
+	if len(result.Variables) > 0 {
+		onuTxPower, _ = utils.ConvertAndMultiply(result.Variables[0].Value) // Extract ONU TX Power from the result
+	} else {
+		log.Error().Msg("Failed to get ONU TX Power: No variables in the response")
+		return "", errors.New("no variables in the response")
 	}
 
 	return onuTxPower, nil // Return ONU TX Power
@@ -569,15 +587,20 @@ func (u *onuUsecase) getStatus(ctx context.Context, OnuStatusOID, onuID string) 
 
 	baseOID := u.cfg.OltCfg.BaseOID1 // Base OID variable get from config
 
-	// Perform SNMP Walk to get ONU Status using snmpRepository Walk method with timeout context parameter
-	err := u.snmpRepository.Walk(baseOID+OnuStatusOID+"."+onuID, func(pdu gosnmp.SnmpPDU) error {
-		onuStatus = utils.ExtractAndGetStatus(pdu.Value) // Extract ONU Status from SNMP PDU Value
-		return nil
-	})
-
+	// Perform SNMP Get to get ONU Status using snmpRepository Get method with timeout context parameter
+	oids := []string{baseOID + OnuStatusOID + "." + onuID}
+	result, err := u.snmpRepository.Get(oids)
 	if err != nil {
-		log.Error().Msg("Failed to perform SNMP Walk get status: " + err.Error()) // Log error message to logger
-		return "", errors.New("failed to perform SNMP Walk")                      // Return error
+		log.Error().Msg("Failed to perform SNMP Get for status: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Get")                      // Return error
+	}
+
+	// Check if the result contains the expected OID
+	if len(result.Variables) > 0 {
+		onuStatus = utils.ExtractAndGetStatus(result.Variables[0].Value) // Extract ONU Status from the result
+	} else {
+		log.Error().Msg("Failed to get ONU Status: No variables in the response")
+		return "", errors.New("no variables in the response")
 	}
 
 	return onuStatus, nil // Return ONU Status
@@ -592,15 +615,20 @@ func (u *onuUsecase) getIPAddress(ctx context.Context, OnuIPAddressOID, onuID st
 
 	baseOID := u.cfg.OltCfg.BaseOID2 // Base OID variable get from config
 
-	// Perform SNMP Walk to get ONU IP Address using snmpRepository Walk method with timeout context parameter
-	err := u.snmpRepository.Walk(baseOID+OnuIPAddressOID+"."+onuID+"."+strconv.Itoa(1), func(pdu gosnmp.SnmpPDU) error {
-		onuIPAddress = utils.ExtractName(pdu.Value) // Extract ONU IP Address from SNMP PDU Value
-		return nil
-	})
-
+	// Perform SNMP Get to get ONU IP Address using snmpRepository Get method with timeout context parameter
+	oids := []string{baseOID + OnuIPAddressOID + "." + onuID + ".1"}
+	result, err := u.snmpRepository.Get(oids)
 	if err != nil {
-		log.Error().Msg("Failed to perform SNMP Walk get IP Address: " + err.Error()) // Log error message to logger
-		return "", errors.New("failed to perform SNMP Walk")                          // Return error
+		log.Error().Msg("Failed to perform SNMP Get for IP Address: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Get")                          // Return error
+	}
+
+	// Check if the result contains the expected OID
+	if len(result.Variables) > 0 {
+		onuIPAddress = utils.ExtractName(result.Variables[0].Value) // Extract ONU IP Address from the result
+	} else {
+		log.Error().Msg("Failed to get ONU IP Address: No variables in the response")
+		return "", errors.New("no variables in the response")
 	}
 
 	return onuIPAddress, nil // Return ONU IP Address
@@ -615,15 +643,20 @@ func (u *onuUsecase) getDescription(ctx context.Context, OnuDescriptionOID, onuI
 
 	baseOID := u.cfg.OltCfg.BaseOID1 // Base OID variable get from config
 
-	// Perform SNMP Walk to get ONU Description using snmpRepository Walk method with timeout context parameter
-	err := u.snmpRepository.Walk(baseOID+OnuDescriptionOID+"."+onuID, func(pdu gosnmp.SnmpPDU) error {
-		onuDescription = utils.ExtractName(pdu.Value) // Extract ONU Description from SNMP PDU Value
-		return nil
-	})
-
+	// Perform SNMP Get to get ONU Description using snmpRepository Get method with timeout context parameter
+	oids := []string{baseOID + OnuDescriptionOID + "." + onuID}
+	result, err := u.snmpRepository.Get(oids)
 	if err != nil {
-		log.Error().Msg("Failed to perform SNMP Walk get description: " + err.Error()) // Log error message to logger
-		return "", errors.New("failed to perform SNMP Walk")                           // Return error
+		log.Error().Msg("Failed to perform SNMP Get for description: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Get")                           // Return error
+	}
+
+	// Check if the result contains the expected OID
+	if len(result.Variables) > 0 {
+		onuDescription = utils.ExtractName(result.Variables[0].Value) // Extract ONU Description from the result
+	} else {
+		log.Error().Msg("Failed to get ONU Description: No variables in the response")
+		return "", errors.New("no variables in the response")
 	}
 
 	return onuDescription, nil // Return ONU Description
@@ -658,8 +691,8 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]m
 	log.Info().Msg("Get Empty ONU ID with SNMP Walk from Board ID: " + strconv.Itoa(
 		boardID) + " and PON ID: " + strconv.Itoa(ponID)) // Log info message to logger
 
-	// Perform SNMP Walk to get ONU ID and Name using snmpRepository Walk method with timeout context parameter
-	err = u.snmpRepository.Walk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
+	// Perform SNMP BulkWalk to get ONU ID and Name using snmpRepository BulkWalk method with timeout context parameter
+	err = u.snmpRepository.BulkWalk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
 		idOnuID := utils.ExtractIDOnuID(pdu.Name) // Extract ONU ID from SNMP PDU Name
 
 		// Append ONU information to the emptyOnuIDList
@@ -735,8 +768,8 @@ func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) e
 		boardID) + " and PON ID: " + strconv.
 		Itoa(ponID)) // Log info message to logger
 
-	// Perform SNMP Walk to get ONU ID and Name using snmpRepository Walk method with timeout context parameter
-	err = u.snmpRepository.Walk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
+	// Perform SNMP BulkWalk to get ONU ID and Name using snmpRepository BulkWalk method with timeout context parameter
+	err = u.snmpRepository.BulkWalk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
 		idOnuID := utils.ExtractIDOnuID(pdu.Name) // Extract ONU ID from SNMP PDU Name
 
 		// Append ONU information to the emptyOnuIDList
