@@ -6,6 +6,7 @@ import (
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/model"
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog/log"
 	"time"
 )
 
@@ -34,11 +35,13 @@ type OnuRedisRepo interface {
 func (r *onuRedisRepo) GetOnuIDCtx(ctx context.Context, key string) ([]model.OnuID, error) {
 	onuBytes, err := r.redisClient.Get(ctx, key).Bytes()
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to get onu id from redis")
 		return nil, errors.Wrap(err, "onuRedisRepo.GetOnuIDCtx.redisClient.Get")
 	}
 
 	var onuId []model.OnuID
 	if err := json.Unmarshal(onuBytes, &onuId); err != nil {
+		log.Error().Err(err).Msg("Failed to unmarshal onu id")
 		return nil, errors.Wrap(err, "onuRedisRepo.GetOnuIDCtx.json.Unmarshal")
 	}
 
@@ -49,10 +52,12 @@ func (r *onuRedisRepo) GetOnuIDCtx(ctx context.Context, key string) ([]model.Onu
 func (r *onuRedisRepo) SetOnuIDCtx(ctx context.Context, key string, seconds int, onuId []model.OnuID) error {
 	onuBytes, err := json.Marshal(onuId)
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to marshal onu id")
 		return errors.Wrap(err, "setRedisRepo.SetNewsCtx.json.Marshal")
 	}
 
 	if err := r.redisClient.Set(ctx, key, onuBytes, time.Second*time.Duration(seconds)).Err(); err != nil {
+		log.Error().Err(err).Msg("Failed to set onu id to redis")
 		return errors.Wrap(err, "onuRedisRepo.SetOnuIDCtx.redisClient.Set")
 	}
 
@@ -62,6 +67,7 @@ func (r *onuRedisRepo) SetOnuIDCtx(ctx context.Context, key string, seconds int,
 // DeleteOnuIDCtx is a method to delete onu id from redis
 func (r *onuRedisRepo) DeleteOnuIDCtx(ctx context.Context, key string) error {
 	if err := r.redisClient.Del(ctx, key).Err(); err != nil {
+		log.Error().Err(err).Msg("Failed to delete onu id from redis")
 		return errors.Wrap(err, "onuRedisRepo.DeleteOnuIDCtx.redisClient.Del")
 	}
 
@@ -74,10 +80,12 @@ func (r *onuRedisRepo) SaveONUInfoList(
 ) error {
 	onuBytes, err := json.Marshal(onuInfoList)
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to marshal onu info list")
 		return errors.Wrap(err, "onuRedisRepo.SaveONUInfoList.json.Marshal")
 	}
 
 	if err := r.redisClient.Set(ctx, key, onuBytes, time.Second*time.Duration(seconds)).Err(); err != nil {
+		log.Error().Err(err).Msg("Failed to set onu info list to redis")
 		return errors.Wrap(err, "onuRedisRepo.SaveONUInfoList.redisClient.Set")
 	}
 
@@ -88,11 +96,13 @@ func (r *onuRedisRepo) SaveONUInfoList(
 func (r *onuRedisRepo) GetONUInfoList(ctx context.Context, key string) ([]model.ONUInfoPerBoard, error) {
 	onuBytes, err := r.redisClient.Get(ctx, key).Bytes()
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to get onu info list from redis")
 		return nil, errors.Wrap(err, "onuRedisRepo.GetONUInfoList.redisClient.Get")
 	}
 
 	var onuInfoList []model.ONUInfoPerBoard
 	if err := json.Unmarshal(onuBytes, &onuInfoList); err != nil {
+		log.Error().Err(err).Msg("Failed to unmarshal onu info list")
 		return nil, errors.Wrap(err, "onuRedisRepo.GetONUInfoList.json.Unmarshal")
 	}
 
@@ -103,11 +113,13 @@ func (r *onuRedisRepo) GetONUInfoList(ctx context.Context, key string) ([]model.
 func (r *onuRedisRepo) GetOnlyOnuIDCtx(ctx context.Context, key string) ([]model.OnuOnlyID, error) {
 	onuBytes, err := r.redisClient.Get(ctx, key).Bytes()
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to get onu id from redis")
 		return nil, errors.Wrap(err, "onuRedisRepo.GetOnlyOnuIDCtx.redisClient.Get")
 	}
 
 	var onuId []model.OnuOnlyID
 	if err := json.Unmarshal(onuBytes, &onuId); err != nil {
+		log.Error().Err(err).Msg("Failed to unmarshal onu id")
 		return nil, errors.Wrap(err, "onuRedisRepo.GetOnlyOnuIDCtx.json.Unmarshal")
 	}
 
@@ -118,10 +130,12 @@ func (r *onuRedisRepo) GetOnlyOnuIDCtx(ctx context.Context, key string) ([]model
 func (r *onuRedisRepo) SaveOnlyOnuIDCtx(ctx context.Context, key string, seconds int, onuId []model.OnuOnlyID) error {
 	onuBytes, err := json.Marshal(onuId)
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to marshal onu id")
 		return errors.Wrap(err, "onuRedisRepo.SaveOnlyOnuIDCtx.json.Marshal")
 	}
 
 	if err := r.redisClient.Set(ctx, key, onuBytes, time.Second*time.Duration(seconds)).Err(); err != nil {
+		log.Error().Err(err).Msg("Failed to set onu id to redis")
 		return errors.Wrap(err, "onuRedisRepo.SaveOnlyOnuIDCtx.redisClient.Set")
 	}
 
