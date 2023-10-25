@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/config"
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/handler"
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/repository"
@@ -12,7 +11,7 @@ import (
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/pkg/redis"
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/pkg/snmp"
 	rds "github.com/redis/go-redis/v9"
-	"log"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"os"
 )
@@ -26,14 +25,13 @@ func New() *App {
 }
 
 func (a *App) Start(ctx context.Context) error {
-
 	// Get config path
 	configPath := utils.GetConfigPath(os.Getenv("config"))
 
 	// Load config
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
+		log.Error().Err(err).Msg("Failed to load config")
 	}
 
 	// Initialize Redis client
@@ -43,20 +41,20 @@ func (a *App) Start(ctx context.Context) error {
 	defer func(redisClient *rds.Client) {
 		err := redisClient.Close()
 		if err != nil {
-			log.Printf("Failed to close Redis client: %v", err)
+			log.Error().Err(err).Msg("Failed to close Redis client")
 		}
 	}(redisClient)
 
 	// Initialize SNMP connection
 	snmpConn, err := snmp.SetupSnmpConnection(cfg)
 	if err != nil {
-		return fmt.Errorf("failed to set up SNMP connection: %w", err)
+		log.Error().Err(err).Msg("Failed to setup SNMP connection")
 	}
 
 	// Close SNMP connection
 	defer func() {
 		if err := snmpConn.Conn.Close(); err != nil {
-			log.Printf("Failed to close SNMP connection: %v", err)
+			log.Error().Err(err).Msg("Failed to close SNMP connection")
 		}
 	}()
 
@@ -81,7 +79,7 @@ func (a *App) Start(ctx context.Context) error {
 	}
 
 	// Start server at given address
-	log.Printf("Starting server at %s", addr)
+	log.Info().Msgf("Server is running at %s", addr)
 
 	// Graceful shutdown
 	return graceful.Shutdown(ctx, server)
