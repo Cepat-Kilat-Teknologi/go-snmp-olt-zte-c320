@@ -37,7 +37,6 @@ func loadRoutes(onuHandler *handler.OnuHandler) http.Handler {
 		r.Get("/{board_id}/pon/{pon_id}/onu_id/empty", onuHandler.GetEmptyOnuID)
 		r.Get("/{board_id}/pon/{pon_id}/onu_id/update", onuHandler.UpdateEmptyOnuID)
 		r.Get("/{board_id}/page/pon/{pon_id}", onuHandler.GetByBoardIDAndPonIDWithPaginate)
-		r.Get("/{board_id}/pon/{pon_id}/onu_id/empty/queue", onuHandler.GetEmptyOnuIDQueue)
 	})
 	router.Mount("/api/v1", apiV1Group)
 	return router
