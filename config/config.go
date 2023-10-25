@@ -29,6 +29,7 @@ type Config struct {
 
 type SnmpConfig struct {
 	Ip        string `mapstructure:"ip"`
+	Port      uint16 `mapstructure:"port"`
 	Community string `mapstructure:"community"`
 }
 

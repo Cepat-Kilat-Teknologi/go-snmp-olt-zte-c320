@@ -1,5 +1,6 @@
 SnmpCfg:
   ip : "192.168.213.174"
+  port : "161"
   community : "homenetro"
 
 OltCfg:
