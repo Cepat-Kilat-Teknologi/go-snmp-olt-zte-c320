@@ -9,6 +9,7 @@ import (
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/model"
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/repository"
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/utils"
+	"github.com/rs/zerolog/log"
 	"sort"
 	"strconv"
 )
@@ -21,7 +22,6 @@ type OnuUseCase interface {
 	GetByBoardIDAndPonIDWithPagination(ctx context.Context, boardID, ponID, page, pageSize int) (
 		[]model.ONUInfoPerBoard, int,
 	)
-	GetEmptyOnuIDQueue(ctx context.Context, boardID, ponID int) ([]model.OnuID, error)
 }
 
 type onuUsecase struct {
@@ -142,6 +142,7 @@ func (u *onuUsecase) getOltConfig(boardID, ponID int) (*model.OltConfig, error) 
 				OnuDescriptionOID:  u.cfg.Board1Pon8.OnuDescriptionOID,
 			}, nil
 		default: // Invalid PON ID
+			log.Error().Msg("Invalid PON ID")        // Log error message to logger
 			return nil, errors.New("invalid PON ID") // Return error
 		}
 	case 2: // Board 2
@@ -243,9 +244,11 @@ func (u *onuUsecase) getOltConfig(boardID, ponID int) (*model.OltConfig, error) 
 				OnuDescriptionOID:  u.cfg.Board2Pon8.OnuDescriptionOID,
 			}, nil
 		default: // Invalid PON ID
+			log.Error().Msg("Invalid PON ID")        // Log error message to logger
 			return nil, errors.New("invalid PON ID") // Return error
 		}
 	default: // Invalid Board ID
+		log.Error().Msg("Invalid Board ID")        // Log error message to logger
 		return nil, errors.New("invalid Board ID") // Return error
 	}
 }
@@ -255,10 +258,15 @@ func (u *onuUsecase) GetByBoardIDAndPonID(ctx context.Context, boardID, ponID in
 	ctx, cancel := context.WithCancel(context.Background()) // Create context with cancel function to cancel context
 	defer cancel()                                          // Defer cancel function to be called later
 
+	// Log info message to logger
+	log.Info().Msg("Get All ONU Information from Board ID: " + strconv.Itoa(boardID) + " and PON ID: " + strconv.Itoa(
+		ponID))
+
 	// Get OLT config based on Board ID and PON ID
 	oltConfig, err := u.getOltConfig(boardID, ponID)
 	if err != nil {
-		return nil, err // Return error if error is not nil
+		log.Error().Msg("Failed to get OLT Config: " + err.Error()) // Log error message to logger
+		return nil, err                                             // Return error if error is not nil
 	}
 
 	// Redis Key
@@ -267,7 +275,8 @@ func (u *onuUsecase) GetByBoardIDAndPonID(ctx context.Context, boardID, ponID in
 	// Try to get data from Redis using GetONUInfoList method with context and Redis key as parameter
 	cachedOnuData, err := u.redisRepository.GetONUInfoList(ctx, redisKey)
 	if err == nil && cachedOnuData != nil {
-		return cachedOnuData, nil // Return cached data if error is nil and cached data is not nil
+		log.Info().Msg("Get ONU Information from Redis with Key: " + redisKey) // Log info message to logger
+		return cachedOnuData, nil                                              // Return cached data if error is nil and cached data is not nil
 	}
 
 	var onuInformationList []model.ONUInfoPerBoard // Create slice to store ONU informationList
@@ -279,15 +288,31 @@ func (u *onuUsecase) GetByBoardIDAndPonID(ctx context.Context, boardID, ponID in
 		based on Board ID and PON ID using snmpRepository Walk method
 		with context and OID as parameter
 	*/
-	err = u.snmpRepository.Walk(oltConfig.BaseOID+oltConfig.OnuIDNameOID, func(pdu gosnmp.SnmpPDU) error {
-		// Store SNMP data to map with ONU ID as key and PDU as value to be used later
-		snmpDataMap[utils.ExtractONUID(pdu.Name)] = pdu
-		return nil
-	})
 
+	log.Info().Msg("Get All ONU Information from SNMP Walk Board ID: " + strconv.Itoa(
+		boardID) + " and PON ID: " + strconv.Itoa(ponID)) // Log info message to logger
+
+	//err = u.snmpRepository.BulkWalk(oltConfig.BaseOID+oltConfig.OnuIDNameOID, func(pdu gosnmp.SnmpPDU) error {
+	//	// Store SNMP data to map with ONU ID as key and PDU as value to be used later
+	//	snmpDataMap[utils.ExtractONUID(pdu.Name)] = pdu // Extract ONU ID from SNMP PDU Name and use it as key in map
+	//	return nil                                      // Return nil error
+	//})
+	//
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	pduList, err := u.snmpRepository.BulkWalkAll(oltConfig.BaseOID + oltConfig.OnuIDNameOID)
 	if err != nil {
-		return nil, err // Return error if error is not nil
+		return nil, err
 	}
+
+	for _, pdu := range pduList {
+		// Store SNMP data to map with ONU ID as key and PDU as value to be used later
+		snmpDataMap[utils.ExtractONUID(pdu.Name)] = pdu // Extract ONU ID from SNMP PDU Name and use it as key in map
+	}
+
+	fmt.Println("snmpDataMap", snmpDataMap)
 
 	/*
 		Loop through SNMP data map to get ONU information based on ONU ID and ONU Name stored in map before and store
@@ -333,10 +358,14 @@ func (u *onuUsecase) GetByBoardIDAndPonID(ctx context.Context, boardID, ponID in
 		return onuInformationList[i].ID < onuInformationList[j].ID
 	})
 
-	// Save ONU information list to Redis
-	err = u.redisRepository.SaveONUInfoList(ctx, redisKey, 300, onuInformationList)
+	// Save ONU information list to Redis 12 hours
+	err = u.redisRepository.SaveONUInfoList(ctx, redisKey, 100, onuInformationList)
+
+	log.Info().Msg("Save ONU Information to Redis with Key: " + redisKey) // Log info message to logger
+
 	if err != nil {
-		return nil, err // Return error if error is not nil
+		log.Error().Msg("Failed to save ONU Information to Redis: " + err.Error()) // Log error message to logger
+		return nil, err                                                            // Return error if error is not nil
 	}
 
 	return onuInformationList, nil // Return ONU information list and nil error
@@ -352,7 +381,8 @@ func (u *onuUsecase) GetByBoardIDPonIDAndOnuID(ctx context.Context, boardID, pon
 	// Get OLT config based on Board ID and PON ID
 	oltConfig, err := u.getOltConfig(boardID, ponID)
 	if err != nil {
-		return model.ONUCustomerInfo{}, err // Return error if error is not nil
+		log.Error().Msg("Failed to get OLT Config: " + err.Error()) // Log error message to logger
+		return model.ONUCustomerInfo{}, err                         // Return error if error is not nil
 	}
 
 	// Create a slice of ONUCustomerInfo
@@ -360,6 +390,10 @@ func (u *onuUsecase) GetByBoardIDPonIDAndOnuID(ctx context.Context, boardID, pon
 
 	// Create a map to store SNMP Walk results
 	snmpDataMap := make(map[string]gosnmp.SnmpPDU)
+
+	log.Info().Msg("Get Detail ONU Information with SNMP Walk from Board ID: " + strconv.Itoa(
+		boardID) + " PON ID: " + strconv.Itoa(
+		ponID) + " ONU ID: " + strconv.Itoa(onuID))
 
 	// Perform SNMP Walk to get ONU ID and Name using snmpRepository Walk method with timeout context parameter
 	err = u.snmpRepository.Walk(oltConfig.BaseOID+oltConfig.OnuIDNameOID+"."+strconv.Itoa(onuID),
@@ -370,6 +404,7 @@ func (u *onuUsecase) GetByBoardIDPonIDAndOnuID(ctx context.Context, boardID, pon
 		})
 
 	if err != nil {
+		log.Error().Msg("Failed to walk OID: " + err.Error())            // Log error message to logger
 		return model.ONUCustomerInfo{}, errors.New("failed to walk OID") // Return error
 	}
 
@@ -449,7 +484,8 @@ func (u *onuUsecase) getONUType(ctx context.Context, OnuTypeOID, onuID string) (
 	})
 
 	if err != nil {
-		return "", errors.New("failed to perform SNMP Walk") // Return error
+		log.Error().Msg("Failed to perform SNMP Walk get ONU Type: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Walk")                        // Return error
 	}
 
 	return onuType, nil // Return ONU Type
@@ -471,7 +507,8 @@ func (u *onuUsecase) getSerialNumber(ctx context.Context, OnuSerialNumberOID, on
 	})
 
 	if err != nil {
-		return "", errors.New("failed to perform SNMP Walk") // Return error
+		log.Error().Msg("Failed to perform SNMP Walk get serial number: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Walk")                             // Return error
 	}
 
 	return onuSerialNumber, nil // Return ONU Serial Number
@@ -493,7 +530,8 @@ func (u *onuUsecase) getRxPower(ctx context.Context, OnuRxPowerOID, onuID string
 	})
 
 	if err != nil {
-		return "", errors.New("failed to perform SNMP Walk") // Return error
+		log.Error().Msg("Failed to perform SNMP Walk get RX Power: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Walk")                        // Return error
 	}
 
 	return onuRxPower, nil // Return ONU RX Power
@@ -515,7 +553,8 @@ func (u *onuUsecase) getTxPower(ctx context.Context, OnuTxPowerOID, onuID string
 	})
 
 	if err != nil {
-		return "", errors.New("failed to perform SNMP Walk") // Return error
+		log.Error().Msg("Failed to perform SNMP Walk get TX Power: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Walk")                        // Return error
 	}
 
 	return onuTxPower, nil // Return ONU TX Power
@@ -537,7 +576,8 @@ func (u *onuUsecase) getStatus(ctx context.Context, OnuStatusOID, onuID string) 
 	})
 
 	if err != nil {
-		return "", errors.New("failed to perform SNMP Walk") // Return error
+		log.Error().Msg("Failed to perform SNMP Walk get status: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Walk")                      // Return error
 	}
 
 	return onuStatus, nil // Return ONU Status
@@ -559,7 +599,8 @@ func (u *onuUsecase) getIPAddress(ctx context.Context, OnuIPAddressOID, onuID st
 	})
 
 	if err != nil {
-		return "", errors.New("failed to perform SNMP Walk") // Return error
+		log.Error().Msg("Failed to perform SNMP Walk get IP Address: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Walk")                          // Return error
 	}
 
 	return onuIPAddress, nil // Return ONU IP Address
@@ -581,7 +622,8 @@ func (u *onuUsecase) getDescription(ctx context.Context, OnuDescriptionOID, onuI
 	})
 
 	if err != nil {
-		return "", errors.New("failed to perform SNMP Walk") // Return error
+		log.Error().Msg("Failed to perform SNMP Walk get description: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Walk")                           // Return error
 	}
 
 	return onuDescription, nil // Return ONU Description
@@ -594,7 +636,8 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]m
 	// Get OLT config based on Board ID and PON ID
 	oltConfig, err := u.getOltConfig(boardID, ponID)
 	if err != nil {
-		return nil, err // Return error if error is not nil
+		log.Error().Msg("Failed to get OLT Config for Get Empty ONU ID: " + err.Error()) // Log error message to logger
+		return nil, err                                                                  // Return error if error is not nil
 	}
 
 	//Redis Key
@@ -603,6 +646,7 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]m
 	//Try to get data from Redis using GetOnuIDCtx method with context and Redis key as parameter
 	cachedOnuData, err := u.redisRepository.GetOnuIDCtx(ctx, redisKey)
 	if err == nil && cachedOnuData != nil {
+		log.Info().Msg("Get Empty ONU ID from Redis with Key: " + redisKey) // Log info message to logger
 		// If data exist in Redis, then return data from Redis
 		return cachedOnuData, nil
 	}
@@ -610,6 +654,9 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]m
 	// Perform SNMP Walk to get ONU ID and ONU Name
 	snmpOID := oltConfig.BaseOID + oltConfig.OnuIDNameOID // SNMP OID variable
 	emptyOnuIDList := make([]model.OnuID, 0)              // Create a slice of ONU ID
+
+	log.Info().Msg("Get Empty ONU ID with SNMP Walk from Board ID: " + strconv.Itoa(
+		boardID) + " and PON ID: " + strconv.Itoa(ponID)) // Log info message to logger
 
 	// Perform SNMP Walk to get ONU ID and Name using snmpRepository Walk method with timeout context parameter
 	err = u.snmpRepository.Walk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
@@ -626,6 +673,7 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]m
 	})
 
 	if err != nil {
+		log.Error().Msg("Failed to perform SNMP Walk get empty ONU ID: " + err.Error()) // Log error message to logger
 		return nil, err
 	}
 
@@ -659,8 +707,11 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]m
 	// Set data to Redis using SetOnuIDCtx method with context, Redis key and data as parameter
 	err = u.redisRepository.SetOnuIDCtx(ctx, redisKey, 300, emptyOnuIDList)
 	if err != nil {
+		log.Error().Msg("Failed to set data to Redis: " + err.Error()) // Log error message to logger
 		return nil, err
 	}
+
+	log.Info().Msg("Save Empty ONU ID to Redis with Key: " + redisKey) // Log info message to logger
 
 	return emptyOnuIDList, nil
 }
@@ -672,12 +723,17 @@ func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) e
 	// Get OLT config based on Board ID and PON ID
 	oltConfig, err := u.getOltConfig(boardID, ponID)
 	if err != nil {
-		return err // Return error if error is not nil
+		log.Error().Msg("Failed to get OLT Config: " + err.Error()) // Log error message to logger
+		return err                                                  // Return error if error is not nil
 	}
 
 	// Perform SNMP Walk to get ONU ID and ONU Name
 	snmpOID := oltConfig.BaseOID + oltConfig.OnuIDNameOID // SNMP OID variable
 	emptyOnuIDList := make([]model.OnuID, 0)              // Create a slice of ONU ID
+
+	log.Info().Msg("Get Empty ONU ID with SNMP Walk from Board ID: " + strconv.Itoa(
+		boardID) + " and PON ID: " + strconv.
+		Itoa(ponID)) // Log info message to logger
 
 	// Perform SNMP Walk to get ONU ID and Name using snmpRepository Walk method with timeout context parameter
 	err = u.snmpRepository.Walk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
@@ -730,8 +786,11 @@ func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) e
 	// Set data to Redis using SetOnuIDCtx method with context, Redis key and data as parameter
 	err = u.redisRepository.SetOnuIDCtx(ctx, redisKey, 300, emptyOnuIDList)
 	if err != nil {
+		log.Error().Msg("Failed to set data to Redis: " + err.Error()) // Log error message to logger
 		return errors.New("failed to set data to Redis")
 	}
+
+	log.Info().Msg("Save Update Empty ONU ID to Redis with Key: " + redisKey) // Log info message to logger
 
 	return nil
 }
