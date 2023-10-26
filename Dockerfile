@@ -1,5 +1,4 @@
 FROM golang:1.21-alpine as dev
-ENV APP_ENV=development
 RUN go install github.com/cosmtrek/air@latest
 WORKDIR /app
 COPY . /app/
@@ -9,6 +8,6 @@ RUN CGO_ENABLED=0 go build -o /go/bin/app ./cmd/api
 FROM gcr.io/distroless/static-debian11 as prod
 ENV APP_ENV=production
 COPY --from=dev go/bin/app /
-COPY --from=dev app/config/config-prod.yml /config/config-prod.yml
+COPY --from=dev app/config/config-prod.yaml /config/config-prod.yaml
 EXPOSE 8081
 ENTRYPOINT ["/app"]
