@@ -13,7 +13,6 @@ var (
 	redisPort               string
 	redisPassword           string
 	redisDB                 int
-	redisDefaultDB          int
 	redisMinIdleConnections int
 	redisPoolSize           int
 	redisPoolTimeout        int
@@ -25,7 +24,6 @@ func NewRedisClient(cfg *config.Config) *redis.Client {
 		redisPort = os.Getenv("REDIS_PORT")
 		redisPassword = os.Getenv("REDIS_PASSWORD")
 		redisDB = utils.ConvertStringToInteger(os.Getenv("REDIS_DB"))
-		redisDefaultDB = utils.ConvertStringToInteger(os.Getenv("REDIS_DEFAULT_DB"))
 		redisMinIdleConnections = utils.ConvertStringToInteger(os.Getenv("REDIS_MIN_IDLE_CONNECTIONS"))
 		redisPoolSize = utils.ConvertStringToInteger(os.Getenv("REDIS_POOL_SIZE"))
 		redisPoolTimeout = utils.ConvertStringToInteger(os.Getenv("REDIS_POOL_TIMEOUT"))
@@ -34,7 +32,6 @@ func NewRedisClient(cfg *config.Config) *redis.Client {
 		redisPort = cfg.RedisCfg.Port
 		redisPassword = cfg.RedisCfg.Password
 		redisDB = cfg.RedisCfg.DB
-		redisDefaultDB = cfg.RedisCfg.DefaultDB
 		redisMinIdleConnections = cfg.RedisCfg.MinIdleConnections
 		redisPoolSize = cfg.RedisCfg.PoolSize
 		redisPoolTimeout = cfg.RedisCfg.PoolTimeout
