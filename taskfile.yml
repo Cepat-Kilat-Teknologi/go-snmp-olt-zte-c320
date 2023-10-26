@@ -21,8 +21,6 @@ tasks:
     desc: Install tools required to run/build this app
     cmds:
       - task: go-install
-        vars: { REPO: github.com/swaggo/swag/cmd/swag@latest }
-      - task: go-install
         vars: { REPO: github.com/cosmtrek/air@latest }
       - task: tidy
 
@@ -34,13 +32,6 @@ tasks:
     desc: Clean up dependencies
     cmds:
       - go mod tidy
-
-  swag:
-    desc: Generate swagger docs
-    cmds:
-      #      - swag init -g internal/server/server.go -o docs
-      - swag init --parseDependency --parseInternal -g internal/server/server.go -o docs
-
 
   app-build:
     desc: Build the app binary
