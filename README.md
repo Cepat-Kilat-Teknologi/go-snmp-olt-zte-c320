@@ -92,7 +92,7 @@ curl -sS localhost:8081/api/v1/board/2/pon/7 | jq
 }
 ```
 
-#### Test with curl GET method Board 2 Pon 7 Onu 3
+#### Test with curl GET method Board 2 Pon 7 Onu 4
 ```shell
  curl -sS localhost:8081/api/v1/board/2/pon/7/onu/4 | jq
 ```
@@ -162,22 +162,6 @@ curl -sS localhost:8081/api/v1/board/2/pon/5/onu_id/update | jq
 {
   "code": 200,
   "status": "OK",
-  "data": [
-    {
-      "board": 2,
-      "pon": 5,
-      "onu_id": 124
-    },
-    {
-      "board": 2,
-      "pon": 5,
-      "onu_id": 125
-    },
-    {
-      "board": 2,
-      "pon": 5,
-      "onu_id": 126
-    }
-  ]
+  "data": "Success Update Empty ONU_ID"
 }
 ```
