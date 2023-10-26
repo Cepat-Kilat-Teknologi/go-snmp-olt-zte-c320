@@ -1,0 +1,6 @@
+.task/
+Taskfile.yml
+*.md
+Dockerfile
+*.toml
+/sumitroajiprabowo/
