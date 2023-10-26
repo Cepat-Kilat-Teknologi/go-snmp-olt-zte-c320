@@ -26,7 +26,7 @@ func New() *App {
 
 func (a *App) Start(ctx context.Context) error {
 	// Get config path
-	configPath := utils.GetConfigPath(os.Getenv("config"))
+	configPath := utils.GetConfigPath(os.Getenv("APP_ENV"))
 
 	// Load config
 	cfg, err := config.LoadConfig(configPath)
@@ -36,6 +36,14 @@ func (a *App) Start(ctx context.Context) error {
 
 	// Initialize Redis client
 	redisClient := redis.NewRedisClient(cfg)
+
+	// Check Redis connection
+	err = redisClient.Ping(ctx).Err()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to ping Redis server")
+	} else {
+		log.Info().Msg("Redis server successfully connected")
+	}
 
 	// Close Redis client
 	defer func(redisClient *rds.Client) {
@@ -49,6 +57,14 @@ func (a *App) Start(ctx context.Context) error {
 	snmpConn, err := snmp.SetupSnmpConnection(cfg)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to setup SNMP connection")
+	}
+
+	// Check SNMP connection
+	err = snmpConn.Connect()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to connect to SNMP server")
+	} else {
+		log.Info().Msg("SNMP server successfully connected")
 	}
 
 	// Close SNMP connection
@@ -79,7 +95,7 @@ func (a *App) Start(ctx context.Context) error {
 	}
 
 	// Start server at given address
-	log.Info().Msgf("Server is running at %s", addr)
+	log.Info().Msgf("Server is successfully running")
 
 	// Graceful shutdown
 	return graceful.Shutdown(ctx, server)
