@@ -11,7 +11,7 @@ tasks:
   dev:
     desc: Start the local environment
     cmds:
-      - docker-compose -f docker-compose.dev.yaml up -d && air -c .air.toml
+      - docker-compose -f docker-compose.local.yaml up -d && air -c .air.toml
 
   go-install:
     cmds:
@@ -35,7 +35,6 @@ tasks:
 
   app-build:
     desc: Build the app binary
-    #    deps: [ test ]
     cmds:
       - CGO_ENABLED=0 go build -o {{.EXE}} ./cmd/api/main.go
     sources:
@@ -53,20 +52,27 @@ tasks:
     cmds:
       - docker buildx build --push --platform linux/amd64,linux/arm64,linux/arm/v7 -t {{.EXE}}:latest -f Dockerfile .
 
+  pull-image:
+    desc: Pull docker image with tag latest with multi-arch support (linux/amd64, linux/arm64) from docker hub
+    cmds:
+      - docker pull {{.EXE}}:latest
+
   docker-run:
     desc: Run docker image with tag latest
     cmds:
-      - docker run -d -p 8081:8081 --name go-snmp-olt-zte-c320 {{.EXE}}:latest
+      - docker network create local-dev
+      - docker run -d --name redis-container --network local-dev -p 6379:6379 redis:7.2
+      - docker run -d -p 8081:8081 --name go-snmp-olt-zte-c320 --network local-dev -e REDIS_HOST=redis-container -e REDIS_PORT=6379 -e REDIS_DB=0 -e REDIS_MIN_IDLE_CONNECTIONS=200 -e REDIS_POOL_SIZE=12000 -e REDIS_POOL_TIMEOUT=240 -e SNMP_HOST=192.168.213.174 -e SNMP_PORT=161 -e SNMP_COMMUNITY=homenetro {{.EXE}}:latest
 
   docker-stop:
     desc: Stop docker image with tag latest
     cmds:
-      - docker stop go-snmp-olt-zte-c320
+      - docker stop go-snmp-olt-zte-c320 && docker stop redis-container
 
   docker-remove:
     desc: Remove docker image with tag latest
     cmds:
-      - docker rm go-snmp-olt-zte-c320
+      - docker network rm local-dev && docker rm go-snmp-olt-zte-c320 && docker rm redis-container
 
   up:
     desc: Start the docker containers in the background
