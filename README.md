@@ -5,7 +5,7 @@ Service for integration into the C320 OLT with the Go programming language
 * [Go](https://go.dev/) - Programming language
 * [Chi](https://github.com/go-chi/chi/) - HTTP Server
 * [GoSNMP](https://github.com/gosnmp/gosnmp) - SNMP library for Go
-* [Redis](github.com/redis/go-redis/v9) - Redis client for Go
+* [Redis](https://github.com/redis/go-redis/v9) - Redis client for Go
 * [Zerolog](https://github.com/rs/zerolog) - Logger
 * [Viper](https://github.com/spf13/viper) - Configuration management
 * [Docker](https://www.docker.com/) - Containerization
