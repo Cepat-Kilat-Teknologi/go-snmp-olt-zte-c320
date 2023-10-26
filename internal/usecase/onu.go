@@ -14,7 +14,7 @@ import (
 	"strconv"
 )
 
-type OnuUseCase interface {
+type OnuUseCaseInterface interface {
 	GetByBoardIDAndPonID(ctx context.Context, boardID, ponID int) ([]model.ONUInfoPerBoard, error)
 	GetByBoardIDPonIDAndOnuID(ctx context.Context, boardID, ponID, onuID int) (model.ONUCustomerInfo, error)
 	GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]model.OnuID, error)
@@ -25,14 +25,15 @@ type OnuUseCase interface {
 }
 
 type onuUsecase struct {
-	snmpRepository  repository.SnmpInterface
-	redisRepository repository.OnuRedisRepo
+	snmpRepository  repository.SnmpRepositoryInterface
+	redisRepository repository.OnuRedisRepositoryInterface
 	cfg             *config.Config
 }
 
 func NewOnuUsecase(
-	snmpRepository repository.SnmpInterface, redisRepository repository.OnuRedisRepo, cfg *config.Config,
-) OnuUseCase {
+	snmpRepository repository.SnmpRepositoryInterface, redisRepository repository.OnuRedisRepositoryInterface,
+	cfg *config.Config,
+) OnuUseCaseInterface {
 	return &onuUsecase{
 		snmpRepository:  snmpRepository,
 		redisRepository: redisRepository,

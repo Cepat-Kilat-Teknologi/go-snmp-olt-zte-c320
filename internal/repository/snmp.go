@@ -4,7 +4,7 @@ import (
 	"github.com/gosnmp/gosnmp"
 )
 
-type SnmpInterface interface {
+type SnmpRepositoryInterface interface {
 	Get(oids []string) (result *gosnmp.SnmpPacket, err error)
 	Walk(oid string, walkFunc func(pdu gosnmp.SnmpPDU) error) error
 	BulkWalk(oid string, walkFunc func(pdu gosnmp.SnmpPDU) error) error
@@ -15,7 +15,7 @@ type snmpRepository struct {
 	snmp *gosnmp.GoSNMP
 }
 
-func NewPonRepository(snmp *gosnmp.GoSNMP) SnmpInterface {
+func NewPonRepository(snmp *gosnmp.GoSNMP) SnmpRepositoryInterface {
 	return &snmpRepository{
 		snmp: snmp,
 	}

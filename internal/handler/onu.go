@@ -20,10 +20,10 @@ type OnuHandlerInterface interface {
 }
 
 type OnuHandler struct {
-	ponUsecase usecase.OnuUseCase
+	ponUsecase usecase.OnuUseCaseInterface
 }
 
-func NewOnuHandler(ponUsecase usecase.OnuUseCase) *OnuHandler {
+func NewOnuHandler(ponUsecase usecase.OnuUseCaseInterface) *OnuHandler {
 	return &OnuHandler{ponUsecase: ponUsecase}
 }
 

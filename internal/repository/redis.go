@@ -10,18 +10,8 @@ import (
 	"time"
 )
 
-// Auth redis repository
-type onuRedisRepo struct {
-	redisClient *redis.Client
-}
-
-// NewOnuRedisRepo will create an object that represent the auth repository
-func NewOnuRedisRepo(redisClient *redis.Client) OnuRedisRepo {
-	return &onuRedisRepo{redisClient}
-}
-
-// OnuRedisRepo is an interface that represent the auth's repository contract
-type OnuRedisRepo interface {
+// OnuRedisRepositoryInterface is an interface that represent the auth's repository contract
+type OnuRedisRepositoryInterface interface {
 	GetOnuIDCtx(ctx context.Context, key string) ([]model.OnuID, error)
 	SetOnuIDCtx(ctx context.Context, key string, seconds int, onuId []model.OnuID) error
 	DeleteOnuIDCtx(ctx context.Context, key string) error
@@ -29,6 +19,16 @@ type OnuRedisRepo interface {
 	GetONUInfoList(ctx context.Context, key string) ([]model.ONUInfoPerBoard, error)
 	GetOnlyOnuIDCtx(ctx context.Context, key string) ([]model.OnuOnlyID, error)
 	SaveOnlyOnuIDCtx(ctx context.Context, key string, seconds int, onuId []model.OnuOnlyID) error
+}
+
+// Auth redis repository
+type onuRedisRepo struct {
+	redisClient *redis.Client
+}
+
+// NewOnuRedisRepo will create an object that represent the auth repository
+func NewOnuRedisRepo(redisClient *redis.Client) OnuRedisRepositoryInterface {
+	return &onuRedisRepo{redisClient}
 }
 
 // GetOnuIDCtx is a method to get onu id from redis
