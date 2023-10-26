@@ -2,14 +2,9 @@ version: '3.9'
 
 services:
   app:
-    restart: always
+    image: sumitroajiprabowo/go-snmp-olt-zte-c320:latest
     container_name: go-snmp-olt-zte-c320
-    build:
-      context: .
-      target: dev
-    command: air -c .air.toml
     environment:
-      - APP_ENV=development
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_DB=0
@@ -19,8 +14,6 @@ services:
       - SNMP_HOST=192.168.213.174
       - SNMP_PORT=161
       - SNMP_COMMUNITY=homenetro
-    volumes:
-      - ./:/app
     depends_on:
       - redis
     ports:
@@ -29,8 +22,5 @@ services:
   redis:
     container_name: redis
     image: redis:7.2
-    #    command: redis-server /usr/local/etc/redis/redis.conf
     ports:
       - "6379:6379"
-  #    volumes:
-  #      - ./config/redis.conf:/usr/local/etc/redis/redis.conf
