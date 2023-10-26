@@ -4,15 +4,34 @@ import (
 	"fmt"
 	"github.com/gosnmp/gosnmp"
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/config"
+	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/utils"
+	"os"
 	"time"
 )
 
-// SetupSnmpConnection is a function to setup snmp connection
+var (
+	snmpHost      string
+	snmpPort      uint16
+	snmpCommunity string
+)
+
+// SetupSnmpConnection is a function to set up snmp connection
 func SetupSnmpConnection(config *config.Config) (*gosnmp.GoSNMP, error) {
+
+	if os.Getenv("APP_ENV") == "development" || os.Getenv("APP_ENV") == "production" {
+		snmpHost = os.Getenv("SNMP_HOST")
+		snmpPort = utils.ConvertStringToUint16(os.Getenv("SNMP_PORT"))
+		snmpCommunity = os.Getenv("SNMP_COMMUNITY")
+	} else {
+		snmpHost = config.SnmpCfg.Ip
+		snmpPort = config.SnmpCfg.Port
+		snmpCommunity = config.SnmpCfg.Community
+	}
+
 	target := &gosnmp.GoSNMP{
-		Target:    config.SnmpCfg.Ip,
-		Port:      config.SnmpCfg.Port,
-		Community: config.SnmpCfg.Community,
+		Target:    snmpHost,
+		Port:      snmpPort,
+		Community: snmpCommunity,
 		Version:   gosnmp.Version2c,
 		Timeout:   time.Duration(300) * time.Second,
 		//Logger:    gosnmp.NewLogger(log.New(os.Stdout, "", 0)),
