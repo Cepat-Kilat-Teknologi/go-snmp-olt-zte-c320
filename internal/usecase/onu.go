@@ -302,16 +302,6 @@ func (u *onuUsecase) GetByBoardIDAndPonID(ctx context.Context, boardID, ponID in
 		return nil, err
 	}
 
-	//pduList, err := u.snmpRepository.BulkWalkAll(oltConfig.BaseOID + oltConfig.OnuIDNameOID)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//for _, pdu := range pduList {
-	//	// Store SNMP data to map with ONU ID as key and PDU as value to be used later
-	//	snmpDataMap[utils.ExtractONUID(pdu.Name)] = pdu // Extract ONU ID from SNMP PDU Name and use it as key in map
-	//}
-
 	/*
 		Loop through SNMP data map to get ONU information based on ONU ID and ONU Name stored in map before and store
 		it to slice of ONU information list to be returned later to caller function as response data
