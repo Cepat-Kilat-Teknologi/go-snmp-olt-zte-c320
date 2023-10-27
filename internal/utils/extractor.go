@@ -7,7 +7,7 @@ import (
 )
 
 func ExtractONUID(oid string) string {
-	// Menguraikan nama OID dan mengambil komponen terakhir
+	// Split the OID name and take the last component
 	parts := strings.Split(oid, ".")
 	if len(parts) > 0 {
 		return parts[len(parts)-1]
@@ -16,8 +16,19 @@ func ExtractONUID(oid string) string {
 }
 
 func ExtractIDOnuID(oid interface{}) int {
-	// Menguraikan nama OID dan mengambil komponen terakhir
-	parts := strings.Split(oid.(string), ".")
+	// Check if oid is nil
+	if oid == nil {
+		return 0
+	}
+
+	// Check if oid is a string
+	oidStr, ok := oid.(string)
+	if !ok {
+		return 0
+	}
+
+	// Split the OID name and take the last component
+	parts := strings.Split(oidStr, ".")
 	if len(parts) > 0 {
 		id, err := strconv.Atoi(parts[len(parts)-1])
 		if err != nil {
@@ -31,35 +42,35 @@ func ExtractIDOnuID(oid interface{}) int {
 func ExtractName(oidValue interface{}) string {
 	switch v := oidValue.(type) {
 	case string:
-		// Data adalah string, gunakan langsung
+		// Data is string, return it
 		return v
 	case []byte:
-		// Data adalah byte slice, konversi ke string
+		// Data is byte slice, convert to string
 		return string(v)
 	default:
-		// Tipe data tidak dikenali, Anda dapat menghandle kasus ini sesuai kebutuhan Anda.
+		// Data type is not recognized, you can handle this case according to your needs.
 		return ""
 	}
 }
 
-// ExtractSerialNumber Fungsi ini mengambil Serial Number dari hasil SNMP Walk
+// ExtractSerialNumber function is used to extract serial number from OID value
 func ExtractSerialNumber(oidValue interface{}) string {
 	switch v := oidValue.(type) {
 	case string:
-		// Data adalah string, gunakan langsung
+		// If the string starts with "1,", remove it from the string
 		if strings.HasPrefix(v, "1,") {
 			return v[2:]
 		}
 		return v
 	case []byte:
-		// Data adalah byte slice, konversi ke string
+		// Convert byte slice to string
 		strValue := string(v)
 		if strings.HasPrefix(strValue, "1,") {
 			return strValue[2:]
 		}
-		return strValue
+		return strValue // Data is byte slice, convert to string
 	default:
-		// Tipe data tidak dikenali, Anda dapat menghandle kasus ini sesuai kebutuhan Anda.
+		// Data type is not recognized, you can handle this case according to your needs.
 		return ""
 	}
 }
@@ -77,8 +88,8 @@ func ConvertAndMultiply(pduValue interface{}) (string, error) {
 	// Subtract 30
 	result -= 30.0
 
-	// Convert the result to a string
-	resultStr := strconv.FormatFloat(result, 'f', -1, 64)
+	// Convert the result to a string with two decimal places
+	resultStr := strconv.FormatFloat(result, 'f', 2, 64)
 
 	return resultStr, nil
 }
