@@ -13,10 +13,10 @@ import (
 
 type OnuHandlerInterface interface {
 	GetByBoardIDAndPonID(w http.ResponseWriter, r *http.Request)
-	GetByBoardIDAndPonIDWithPaginate(w http.ResponseWriter, r *http.Request)
 	GetByBoardIDPonIDAndOnuID(w http.ResponseWriter, r *http.Request)
 	GetEmptyOnuID(w http.ResponseWriter, r *http.Request)
 	UpdateEmptyOnuID(w http.ResponseWriter, r *http.Request)
+	GetByBoardIDAndPonIDWithPaginate(w http.ResponseWriter, r *http.Request)
 }
 
 type OnuHandler struct {
@@ -93,64 +93,6 @@ func (o *OnuHandler) GetByBoardIDAndPonID(w http.ResponseWriter, r *http.Request
 
 	utils.SendJSONResponse(w, http.StatusOK, response) // 200
 
-}
-
-func (o *OnuHandler) GetByBoardIDAndPonIDWithPaginate(w http.ResponseWriter, r *http.Request) {
-
-	boardID := chi.URLParam(r, "board_id") // 1 or 2
-	ponID := chi.URLParam(r, "pon_id")     // 1 - 8
-
-	// Get page and page size parameters from the request
-	pageIndex, pageSize := pagination.GetPaginationParametersFromRequest(r)
-
-	boardIDInt, err := strconv.Atoi(boardID) // convert string to int
-
-	log.Info().Msg("Received a request to GetByBoardIDAndPonIDWithPaginate")
-
-	// Validate boardIDInt value and return error 400 if boardIDInt is not 1 or 2
-	if err != nil || (boardIDInt != 1 && boardIDInt != 2) {
-		log.Error().Err(err).Msg("Invalid 'board_id' parameter")
-		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'board_id' parameter. It must be 1 or 2")) // error 400
-		return
-	}
-
-	ponIDInt, err := strconv.Atoi(ponID) // convert string to int
-
-	// Validate ponIDInt value and return error 400 if ponIDInt is not between 1 and 8
-	if err != nil || ponIDInt < 1 || ponIDInt > 8 {
-		log.Error().Err(err).Msg("Invalid 'pon_id' parameter")
-		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'pon_id' parameter. It must be between 1 and 8")) // error 400
-		return
-	}
-
-	item, count := o.ponUsecase.GetByBoardIDAndPonIDWithPagination(r.Context(), boardIDInt, ponIDInt, pageIndex, pageSize)
-
-	/*
-		Validate item value
-		If item is empty, return error 404
-	*/
-
-	if len(item) == 0 {
-		log.Error().Msg("Data not found")
-		utils.ErrorNotFound(w, fmt.Errorf("data not found")) // error 404
-		return
-	}
-
-	// Convert result to JSON format according to Pages structure
-	pages := pagination.New(pageIndex, pageSize, count)
-
-	// Convert result to JSON format according to WebResponse structure
-	responsePagination := pagination.Pages{
-		Code:      http.StatusOK, // 200
-		Status:    "OK",          // "OK"
-		Page:      pages.Page,
-		PageSize:  pages.PageSize,
-		PageCount: pages.PageCount,
-		TotalRows: pages.TotalRows,
-		Data:      item,
-	}
-
-	utils.SendJSONResponse(w, http.StatusOK, responsePagination) // 200
 }
 
 func (o *OnuHandler) GetByBoardIDPonIDAndOnuID(w http.ResponseWriter, r *http.Request) {
@@ -310,4 +252,62 @@ func (o *OnuHandler) UpdateEmptyOnuID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.SendJSONResponse(w, http.StatusOK, response) // 200
+}
+
+func (o *OnuHandler) GetByBoardIDAndPonIDWithPaginate(w http.ResponseWriter, r *http.Request) {
+
+	boardID := chi.URLParam(r, "board_id") // 1 or 2
+	ponID := chi.URLParam(r, "pon_id")     // 1 - 8
+
+	// Get page and page size parameters from the request
+	pageIndex, pageSize := pagination.GetPaginationParametersFromRequest(r)
+
+	boardIDInt, err := strconv.Atoi(boardID) // convert string to int
+
+	log.Info().Msg("Received a request to GetByBoardIDAndPonIDWithPaginate")
+
+	// Validate boardIDInt value and return error 400 if boardIDInt is not 1 or 2
+	if err != nil || (boardIDInt != 1 && boardIDInt != 2) {
+		log.Error().Err(err).Msg("Invalid 'board_id' parameter")
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'board_id' parameter. It must be 1 or 2")) // error 400
+		return
+	}
+
+	ponIDInt, err := strconv.Atoi(ponID) // convert string to int
+
+	// Validate ponIDInt value and return error 400 if ponIDInt is not between 1 and 8
+	if err != nil || ponIDInt < 1 || ponIDInt > 8 {
+		log.Error().Err(err).Msg("Invalid 'pon_id' parameter")
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'pon_id' parameter. It must be between 1 and 8")) // error 400
+		return
+	}
+
+	item, count := o.ponUsecase.GetByBoardIDAndPonIDWithPagination(r.Context(), boardIDInt, ponIDInt, pageIndex, pageSize)
+
+	/*
+		Validate item value
+		If item is empty, return error 404
+	*/
+
+	if len(item) == 0 {
+		log.Error().Msg("Data not found")
+		utils.ErrorNotFound(w, fmt.Errorf("data not found")) // error 404
+		return
+	}
+
+	// Convert result to JSON format according to Pages structure
+	pages := pagination.New(pageIndex, pageSize, count)
+
+	// Convert result to JSON format according to WebResponse structure
+	responsePagination := pagination.Pages{
+		Code:      http.StatusOK, // 200
+		Status:    "OK",          // "OK"
+		Page:      pages.Page,
+		PageSize:  pages.PageSize,
+		PageCount: pages.PageCount,
+		TotalRows: pages.TotalRows,
+		Data:      item,
+	}
+
+	utils.SendJSONResponse(w, http.StatusOK, responsePagination) // 200
 }
