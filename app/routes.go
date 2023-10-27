@@ -36,7 +36,9 @@ func loadRoutes(onuHandler *handler.OnuHandler) http.Handler {
 		r.Get("/{board_id}/pon/{pon_id}/onu/{onu_id}", onuHandler.GetByBoardIDPonIDAndOnuID)
 		r.Get("/{board_id}/pon/{pon_id}/onu_id/empty", onuHandler.GetEmptyOnuID)
 		r.Get("/{board_id}/pon/{pon_id}/onu_id/update", onuHandler.UpdateEmptyOnuID)
-		r.Get("/{board_id}/page/pon/{pon_id}", onuHandler.GetByBoardIDAndPonIDWithPaginate)
+	})
+	apiV1Group.Route("/paginate", func(r chi.Router) {
+		r.Get("/board/{board_id}/pon/{pon_id}", onuHandler.GetByBoardIDAndPonIDWithPaginate)
 	})
 	router.Mount("/api/v1", apiV1Group)
 	return router
