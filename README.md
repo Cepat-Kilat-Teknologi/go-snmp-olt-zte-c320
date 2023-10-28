@@ -12,13 +12,15 @@ Service for integration into the C320 OLT with the Go programming language
 * [Task](https://github.com/go-task/task) - Task runner
 * [Air](https://github.com/cosmtrek/air) - Live reload for Go apps
 
-#### 👨‍💻Recommendation for local development most comfortable usage:
+## Getting Started 🚀
+
+### 👨‍💻Recommendation for local development most comfortable usage:
 
 ``` shell
 task dev
 ```
 
-#### Docker development usage:
+### Docker development usage:
 ```shell
 task up
 ```
@@ -27,8 +29,40 @@ task up
 docker-compose -f docker-compose.local.yaml up -d && air -c .air.toml
 ```
 
+### Production usage with internal redis in docker:
+```shell
+task docker-run
+```
+```shell
+docker network create local-dev && \
+docker run -d --name redis-container \
+--network local-dev -p 6379:6379 redis:7.2 && \
+docker run -d -p 8081:8081 --name go-snmp-olt-zte-c320 \
+--network local-dev -e REDIS_HOST=redis-container \
+-e REDIS_PORT=6379 -e REDIS_DB=0 \
+-e REDIS_MIN_IDLE_CONNECTIONS=200 -e REDIS_POOL_SIZE=12000 \
+-e REDIS_POOL_TIMEOUT=240 -e SNMP_HOST=192.168.213.174 \
+-e SNMP_PORT=161 -e SNMP_COMMUNITY=homenetro \
+sumitroajiprabowo/go-snmp-olt-zte-c320:latest
+```
 
-#### Available tasks for this project:
+### Production usage without external redis:
+```shell
+docker run -d -p 8081:8081 --name go-snmp-olt-zte-c320 \
+-e REDIS_HOST=redis_host \
+-e REDIS_PORT=redis_port \
+-e REDIS_DB=redis_db \
+-e REDIS_MIN_IDLE_CONNECTIONS=redis_min_idle_connection \
+-e REDIS_POOL_SIZE=redis_pool_size \
+-e REDIS_POOL_TIMEOUT=redis_pool_timeout \
+-e SNMP_HOST=snmp_host \
+-e SNMP_PORT=snmp_port \
+-e SNMP_COMMUNITY=snmp_community \
+sumitroajiprabowo/go-snmp-olt-zte-c320:latest
+```
+
+
+### Available tasks for this project:
 
 | Syntax             | Description                                                     |
 |--------------------|-----------------------------------------------------------------|
@@ -48,11 +82,11 @@ docker-compose -f docker-compose.local.yaml up -d && air -c .air.toml
 | rebuild            | Rebuild the docker image and up with detached mode              |
 | tidy               | Clean up dependencies                                           |
 
-#### Test with curl GET method Board 2 Pon 7
+### Test with curl GET method Board 2 Pon 7
 ``` shell
 curl -sS localhost:8081/api/v1/board/2/pon/7 | jq
 ```
-#### Output Result
+### Result
 ```json
 {
   "code": 200,
@@ -92,12 +126,12 @@ curl -sS localhost:8081/api/v1/board/2/pon/7 | jq
 }
 ```
 
-#### Test with curl GET method Board 2 Pon 7 Onu 4
+### Test with curl GET method Board 2 Pon 7 Onu 4
 ```shell
  curl -sS localhost:8081/api/v1/board/2/pon/7/onu/4 | jq
 ```
 
-#### Output Result
+### Result
 ```json
 {
   "code": 200,
@@ -118,12 +152,12 @@ curl -sS localhost:8081/api/v1/board/2/pon/7 | jq
 }
 ```
 
-#### Test with curl GET method Get Empty ONU_ID in Board 2 Pon 5
+### Test with curl GET method Get Empty ONU_ID in Board 2 Pon 5
 ```shell
 curl -sS localhost:8081/api/v1/board/2/pon/5/onu_id/empty | jq
 ```
 
-#### Output Result
+### Result
 ```json
 {
   "code": 200,
@@ -153,7 +187,7 @@ curl -sS localhost:8081/api/v1/board/2/pon/5/onu_id/empty | jq
 }
 ```
 
-#### Test with curl GET method Get Empty ONU_ID After Add ONU in Board 2 Pon 5
+### Test with curl GET method Get Empty ONU_ID After Add ONU in Board 2 Pon 5
 ```shell
 curl -sS localhost:8081/api/v1/board/2/pon/5/onu_id/update | jq
 ```
@@ -165,3 +199,74 @@ curl -sS localhost:8081/api/v1/board/2/pon/5/onu_id/update | jq
   "data": "Success Update Empty ONU_ID"
 }
 ```
+
+### Test with curl GET method Get Onu Information in Board 2 Pon 8 with paginate
+```shell
+curl -sS 'http://103.165.157.63:8081/api/v1/paginate/board/2/pon/8?limit=3&page=2' | jq
+```
+### Result
+```json
+{
+  "code": 200,
+  "status": "OK",
+  "page": 2,
+  "limit": 3,
+  "page_count": 23,
+  "total_rows": 69,
+  "data": [
+    {
+      "board": 2,
+      "pon": 8,
+      "onu_id": 4,
+      "name": "Arif Irwan Setiawan",
+      "onu_type": "F670LV7.1",
+      "serial_number": "ZTEGC5A27AE1",
+      "rx_power": "-19.17",
+      "status": "Online"
+    },
+    {
+      "board": 2,
+      "pon": 8,
+      "onu_id": 5,
+      "name": "Putra Chandra Agusta",
+      "onu_type": "F660V6.0",
+      "serial_number": "ZTEGD00E4BCC",
+      "rx_power": "-19.54",
+      "status": "Online"
+    },
+    {
+      "board": 2,
+      "pon": 8,
+      "onu_id": 6,
+      "name": "Tarjito",
+      "onu_type": "F670LV7.1",
+      "serial_number": "ZTEGC5A062E0",
+      "rx_power": "-21.81",
+      "status": "Online"
+    }
+  ]
+}
+```
+
+### Description of Paginate
+| Syntax             | Description                                                     |
+|--------------------|-----------------------------------------------------------------|
+| page               | Page number                                                     |
+| limit              | Limit data per page                                             |
+| page_count         | Total page                                                      |
+| total_rows         | Total rows                                                      |
+| data               | Data of onu                                                     |
+
+#### Default paginate
+``` go
+var (
+	DefaultPageSize = 10 // default page size
+	MaxPageSize     = 100 // max page size
+	PageVar         = "page"
+	PageSizeVar     = "limit"
+)
+```
+
+
+### LICENSE
+[MIT License](https://github.com/megadata-dev/go-snmp-olt-zte-c320/blob/main/LICENSE)
