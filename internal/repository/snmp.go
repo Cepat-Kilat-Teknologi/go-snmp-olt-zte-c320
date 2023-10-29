@@ -8,7 +8,6 @@ type SnmpRepositoryInterface interface {
 	Get(oids []string) (result *gosnmp.SnmpPacket, err error)
 	Walk(oid string, walkFunc func(pdu gosnmp.SnmpPDU) error) error
 	BulkWalk(oid string, walkFunc func(pdu gosnmp.SnmpPDU) error) error
-	BulkWalkAll(oid string) ([]gosnmp.SnmpPDU, error)
 }
 
 type snmpRepository struct {
@@ -31,8 +30,4 @@ func (r *snmpRepository) Walk(oid string, walkFunc func(pdu gosnmp.SnmpPDU) erro
 
 func (r *snmpRepository) BulkWalk(oid string, walkFunc func(pdu gosnmp.SnmpPDU) error) error {
 	return r.snmp.BulkWalk(oid, walkFunc)
-}
-
-func (r *snmpRepository) BulkWalkAll(oid string) ([]gosnmp.SnmpPDU, error) {
-	return r.snmp.BulkWalkAll(oid)
 }
