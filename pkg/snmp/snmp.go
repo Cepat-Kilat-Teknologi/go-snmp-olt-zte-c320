@@ -1,6 +1,7 @@
 package snmp
 
 import (
+	"context"
 	"fmt"
 	"github.com/gosnmp/gosnmp"
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/config"
@@ -16,7 +17,7 @@ var (
 )
 
 // SetupSnmpConnection is a function to set up snmp connection
-func SetupSnmpConnection(config *config.Config) (*gosnmp.GoSNMP, error) {
+func SetupSnmpConnection(ctx context.Context, config *config.Config) (*gosnmp.GoSNMP, error) {
 
 	if os.Getenv("APP_ENV") == "development" || os.Getenv("APP_ENV") == "production" {
 		snmpHost = os.Getenv("SNMP_HOST")
@@ -32,6 +33,7 @@ func SetupSnmpConnection(config *config.Config) (*gosnmp.GoSNMP, error) {
 		Target:    snmpHost,
 		Port:      snmpPort,
 		Community: snmpCommunity,
+		Context:   ctx,
 		Version:   gosnmp.Version2c,
 		Timeout:   time.Duration(300) * time.Second,
 		//Logger:    gosnmp.NewLogger(log.New(os.Stdout, "", 0)),
