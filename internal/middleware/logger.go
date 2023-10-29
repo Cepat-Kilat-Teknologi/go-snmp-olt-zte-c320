@@ -16,8 +16,8 @@ func Logger(logger zerolog.Logger) func(next http.Handler) http.Handler {
 			startTime := time.Now()
 
 			defer func() {
-				endTime := time.Now()                 // Waktu selesai permintaan
-				elapsedTime := endTime.Sub(startTime) // Durasi permintaan
+				endTime := time.Now()                 // End time
+				elapsedTime := endTime.Sub(startTime) // Request time
 
 				if r := recover(); r != nil && r != http.ErrAbortHandler {
 					logger.Error().Interface("recover", r).Bytes("stack", debug.Stack()).Msg("incoming_request_panic")
