@@ -18,7 +18,7 @@ type OnuUseCaseInterface interface {
 	GetByBoardIDPonIDAndOnuID(ctx context.Context, boardID, ponID, onuID int) (model.ONUCustomerInfo, error)
 	GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]model.OnuID, error)
 	UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) error
-	GetByBoardIDAndPonIDWithPagination(ctx context.Context, boardID, ponID, page, pageSize int) (
+	GetByBoardIDAndPonIDWithPagination(boardID, ponID, page, pageSize int) (
 		[]model.ONUInfoPerBoard, int,
 	)
 }
@@ -41,12 +41,12 @@ func NewOnuUsecase(
 }
 
 func (u *onuUsecase) getOltConfig(boardID, ponID int) (*model.OltConfig, error) {
-	config, err := u.getBoardConfig(boardID, ponID)
+	cfg, err := u.getBoardConfig(boardID, ponID)
 	if err != nil {
 		log.Error().Msg(err.Error())
 		return nil, err
 	}
-	return config, nil
+	return cfg, nil
 }
 
 func (u *onuUsecase) getBoardConfig(boardID, ponID int) (*model.OltConfig, error) {
@@ -1055,7 +1055,7 @@ func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) e
 }
 
 func (u *onuUsecase) GetByBoardIDAndPonIDWithPagination(
-	ctx context.Context, boardID, ponID, pageIndex, pageSize int,
+	boardID, ponID, pageIndex, pageSize int,
 ) ([]model.ONUInfoPerBoard, int) {
 
 	// Get OLT config based on Board ID and PON ID
