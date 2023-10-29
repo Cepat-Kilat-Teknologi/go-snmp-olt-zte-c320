@@ -131,7 +131,7 @@ func (o *OnuHandler) GetByBoardIDPonIDAndOnuID(w http.ResponseWriter, r *http.Re
 	}
 
 	// Call usecase to get data from SNMP
-	onuInfoList, err := o.ponUsecase.GetByBoardIDPonIDAndOnuID(r.Context(), boardIDInt, ponIDInt, onuIDInt)
+	onuInfoList, err := o.ponUsecase.GetByBoardIDPonIDAndOnuID(boardIDInt, ponIDInt, onuIDInt)
 
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get data from SNMP")
@@ -282,7 +282,7 @@ func (o *OnuHandler) GetByBoardIDAndPonIDWithPaginate(w http.ResponseWriter, r *
 		return
 	}
 
-	item, count := o.ponUsecase.GetByBoardIDAndPonIDWithPagination(r.Context(), boardIDInt, ponIDInt, pageIndex,
+	item, count := o.ponUsecase.GetByBoardIDAndPonIDWithPagination(boardIDInt, ponIDInt, pageIndex,
 		pageSize)
 
 	/*
@@ -301,13 +301,13 @@ func (o *OnuHandler) GetByBoardIDAndPonIDWithPaginate(w http.ResponseWriter, r *
 
 	// Convert result to JSON format according to WebResponse structure
 	responsePagination := pagination.Pages{
-		Code:      http.StatusOK, // 200
-		Status:    "OK",          // "OK"
-		Page:      pages.Page,
-		PageSize:  pages.PageSize,
-		PageCount: pages.PageCount,
-		TotalRows: pages.TotalRows,
-		Data:      item,
+		Code:      http.StatusOK,   // 200
+		Status:    "OK",            // "OK"
+		Page:      pages.Page,      // page
+		PageSize:  pages.PageSize,  // page size
+		PageCount: pages.PageCount, // page count
+		TotalRows: pages.TotalRows, // total rows
+		Data:      item,            // data
 	}
 
 	utils.SendJSONResponse(w, http.StatusOK, responsePagination) // 200

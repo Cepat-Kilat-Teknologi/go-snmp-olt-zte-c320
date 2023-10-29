@@ -16,10 +16,10 @@ import (
 
 type OnuUseCaseInterface interface {
 	GetByBoardIDAndPonID(ctx context.Context, boardID, ponID int) ([]model.ONUInfoPerBoard, error)
-	GetByBoardIDPonIDAndOnuID(ctx context.Context, boardID, ponID, onuID int) (model.ONUCustomerInfo, error)
+	GetByBoardIDPonIDAndOnuID(boardID, ponID, onuID int) (model.ONUCustomerInfo, error)
 	GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]model.OnuID, error)
 	UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) error
-	GetByBoardIDAndPonIDWithPagination(ctx context.Context, boardID, ponID, page, pageSize int) (
+	GetByBoardIDAndPonIDWithPagination(boardID, ponID, page, pageSize int) (
 		[]model.ONUInfoPerBoard, int,
 	)
 }
@@ -594,12 +594,9 @@ func (u *onuUsecase) GetByBoardIDAndPonID(ctx context.Context, boardID, ponID in
 	return onuInformationList, nil // Return ONU information list and nil error
 }
 
-func (u *onuUsecase) GetByBoardIDPonIDAndOnuID(ctx context.Context, boardID, ponID, onuID int) (
+func (u *onuUsecase) GetByBoardIDPonIDAndOnuID(boardID, ponID, onuID int) (
 	model.ONUCustomerInfo, error,
 ) {
-
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second) // Create context with timeout 60 seconds
-	defer cancel()                                                           // Cancel context when function is done
 
 	// Get OLT config based on Board ID and PON ID
 	oltConfig, err := u.getOltConfig(boardID, ponID)
@@ -860,11 +857,8 @@ func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) e
 }
 
 func (u *onuUsecase) GetByBoardIDAndPonIDWithPagination(
-	ctx context.Context, boardID, ponID, pageIndex, pageSize int,
+	boardID, ponID, pageIndex, pageSize int,
 ) ([]model.ONUInfoPerBoard, int) {
-
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second) // Create context with timeout 60 seconds
-	defer cancel()                                                           // Cancel context when function is done
 
 	// Get OLT config based on Board ID and PON ID
 	oltConfig, err := u.getOltConfig(boardID, ponID)
