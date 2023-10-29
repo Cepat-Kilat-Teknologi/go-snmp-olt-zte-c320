@@ -11,6 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"sort"
 	"strconv"
+	"time"
 )
 
 type OnuUseCaseInterface interface {
@@ -18,7 +19,7 @@ type OnuUseCaseInterface interface {
 	GetByBoardIDPonIDAndOnuID(ctx context.Context, boardID, ponID, onuID int) (model.ONUCustomerInfo, error)
 	GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]model.OnuID, error)
 	UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) error
-	GetByBoardIDAndPonIDWithPagination(boardID, ponID, page, pageSize int) (
+	GetByBoardIDAndPonIDWithPagination(ctx context.Context, boardID, ponID, page, pageSize int) (
 		[]model.ONUInfoPerBoard, int,
 	)
 }
@@ -1055,8 +1056,11 @@ func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) e
 }
 
 func (u *onuUsecase) GetByBoardIDAndPonIDWithPagination(
-	boardID, ponID, pageIndex, pageSize int,
+	ctx context.Context, boardID, ponID, pageIndex, pageSize int,
 ) ([]model.ONUInfoPerBoard, int) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
 	// Get OLT config based on Board ID and PON ID
 	oltConfig, err := u.getOltConfig(boardID, ponID)
