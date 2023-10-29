@@ -282,7 +282,8 @@ func (o *OnuHandler) GetByBoardIDAndPonIDWithPaginate(w http.ResponseWriter, r *
 		return
 	}
 
-	item, count := o.ponUsecase.GetByBoardIDAndPonIDWithPagination(boardIDInt, ponIDInt, pageIndex, pageSize)
+	item, count := o.ponUsecase.GetByBoardIDAndPonIDWithPagination(r.Context(), boardIDInt, ponIDInt, pageIndex,
+		pageSize)
 
 	/*
 		Validate item value
