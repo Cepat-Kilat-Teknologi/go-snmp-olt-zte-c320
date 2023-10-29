@@ -229,19 +229,29 @@ type Board2Pon8 struct {
 
 // LoadConfig file from given path using viper
 func LoadConfig(filename string) (*Config, error) {
+
+	// Initialize viper
 	v := viper.New()
+
+	// Set config file name
 	v.SetConfigName(filename)
+
+	// Set config path in current directory
 	v.AddConfigPath(".")
+
+	// Allow environment variables to override config
 	v.AutomaticEnv()
+
+	// Read config file
 	if err := v.ReadInConfig(); err != nil {
-		var configFileNotFoundError viper.ConfigFileNotFoundError
+		var configFileNotFoundError viper.ConfigFileNotFoundError // Initialize config file not found error
 		if errors.As(err, &configFileNotFoundError) {
 			return nil, errors.New("config file not found")
 		}
 		return nil, err
 	}
 
-	var cfg Config
+	var cfg Config // Initialize config variable
 
 	// Unmarshal config
 	if err := v.Unmarshal(&cfg); err != nil {

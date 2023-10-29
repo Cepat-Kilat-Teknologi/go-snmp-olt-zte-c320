@@ -7,15 +7,18 @@ import (
 )
 
 func main() {
-	server := app.New()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
+	// Initialize application
+	server := app.New()                                     // Create a new instance of application
+	ctx, cancel := context.WithCancel(context.Background()) // Create a new context with cancel function
+	defer cancel()                                          // Cancel context when main function is finished
+
+	// Start application server in a goroutine
 	go func() {
-		err := server.Start(ctx)
+		err := server.Start(ctx) // Start application server
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to start server")
-			cancel()
+			log.Fatal().Err(err).Msg("Failed to start server") // Log error message
+			cancel()                                           // Cancel context if error occurred
 		}
 	}()
 
@@ -25,8 +28,7 @@ func main() {
 
 	// Wait for a signal to gracefully stop the application.
 	select {
-	case <-ctx.Done():
-		// Application was gracefully stopped or an error occurred
+	case <-ctx.Done(): // Application was gracefully stopped or an error occurred
 		log.Error().Err(ctx.Err()).Msg("Application was gracefully stopped or an error occurred")
 	}
 }
