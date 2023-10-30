@@ -11,7 +11,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"sort"
 	"strconv"
-	"time"
 )
 
 type OnuUseCaseInterface interface {
@@ -275,223 +274,7 @@ func (u *onuUsecase) getBoard2Config(ponID int) *model.OltConfig {
 	}
 }
 
-//func (u *onuUsecase) getOltConfig(boardID, ponID int) (*model.OltConfig, error) {
-//	// Determine base OID and other OID based on Board ID and PON ID
-//	switch boardID {
-//	case 1: // Board 1
-//		switch ponID {
-//		case 1: // PON 1
-//			return &model.OltConfig{
-//				BaseOID:            u.cfg.OltCfg.BaseOID1,
-//				OnuIDNameOID:       u.cfg.Board1Pon1.OnuIDNameOID,
-//				OnuTypeOID:         u.cfg.Board1Pon1.OnuTypeOID,
-//				OnuSerialNumberOID: u.cfg.Board1Pon1.OnuSerialNumberOID,
-//				OnuRxPowerOID:      u.cfg.Board1Pon1.OnuRxPowerOID,
-//				OnuTxPowerOID:      u.cfg.Board1Pon1.OnuTxPowerOID,
-//				OnuStatusOID:       u.cfg.Board1Pon1.OnuStatusOID,
-//				OnuIPAddressOID:    u.cfg.Board1Pon1.OnuIPAddressOID,
-//				OnuDescriptionOID:  u.cfg.Board1Pon1.OnuDescriptionOID,
-//			}, nil
-//		case 2: // PON 2
-//			return &model.OltConfig{
-//				BaseOID:            u.cfg.OltCfg.BaseOID1,
-//				OnuIDNameOID:       u.cfg.Board1Pon2.OnuIDNameOID,
-//				OnuTypeOID:         u.cfg.Board1Pon2.OnuTypeOID,
-//				OnuSerialNumberOID: u.cfg.Board1Pon2.OnuSerialNumberOID,
-//				OnuRxPowerOID:      u.cfg.Board1Pon2.OnuRxPowerOID,
-//				OnuTxPowerOID:      u.cfg.Board1Pon2.OnuTxPowerOID,
-//				OnuStatusOID:       u.cfg.Board1Pon2.OnuStatusOID,
-//				OnuIPAddressOID:    u.cfg.Board1Pon2.OnuIPAddressOID,
-//				OnuDescriptionOID:  u.cfg.Board1Pon2.OnuDescriptionOID,
-//			}, nil
-//		case 3: // PON 3
-//			return &model.OltConfig{
-//				BaseOID:            u.cfg.OltCfg.BaseOID1,
-//				OnuIDNameOID:       u.cfg.Board1Pon3.OnuIDNameOID,
-//				OnuTypeOID:         u.cfg.Board1Pon3.OnuTypeOID,
-//				OnuSerialNumberOID: u.cfg.Board1Pon3.OnuSerialNumberOID,
-//				OnuRxPowerOID:      u.cfg.Board1Pon3.OnuRxPowerOID,
-//				OnuTxPowerOID:      u.cfg.Board1Pon3.OnuTxPowerOID,
-//				OnuStatusOID:       u.cfg.Board1Pon3.OnuStatusOID,
-//				OnuIPAddressOID:    u.cfg.Board1Pon3.OnuIPAddressOID,
-//				OnuDescriptionOID:  u.cfg.Board1Pon3.OnuDescriptionOID,
-//			}, nil
-//		case 4: // PON 4
-//			return &model.OltConfig{
-//				BaseOID:            u.cfg.OltCfg.BaseOID1,
-//				OnuIDNameOID:       u.cfg.Board1Pon4.OnuIDNameOID,
-//				OnuTypeOID:         u.cfg.Board1Pon4.OnuTypeOID,
-//				OnuSerialNumberOID: u.cfg.Board1Pon4.OnuSerialNumberOID,
-//				OnuRxPowerOID:      u.cfg.Board1Pon4.OnuRxPowerOID,
-//				OnuTxPowerOID:      u.cfg.Board1Pon4.OnuTxPowerOID,
-//				OnuStatusOID:       u.cfg.Board1Pon4.OnuStatusOID,
-//				OnuIPAddressOID:    u.cfg.Board1Pon4.OnuIPAddressOID,
-//				OnuDescriptionOID:  u.cfg.Board1Pon4.OnuDescriptionOID,
-//			}, nil
-//		case 5: // PON 5
-//			return &model.OltConfig{
-//				BaseOID:            u.cfg.OltCfg.BaseOID1,
-//				OnuIDNameOID:       u.cfg.Board1Pon5.OnuIDNameOID,
-//				OnuTypeOID:         u.cfg.Board1Pon5.OnuTypeOID,
-//				OnuSerialNumberOID: u.cfg.Board1Pon5.OnuSerialNumberOID,
-//				OnuRxPowerOID:      u.cfg.Board1Pon5.OnuRxPowerOID,
-//				OnuTxPowerOID:      u.cfg.Board1Pon5.OnuTxPowerOID,
-//				OnuStatusOID:       u.cfg.Board1Pon5.OnuStatusOID,
-//				OnuIPAddressOID:    u.cfg.Board1Pon5.OnuIPAddressOID,
-//				OnuDescriptionOID:  u.cfg.Board1Pon5.OnuDescriptionOID,
-//			}, nil
-//		case 6: // PON 6
-//			return &model.OltConfig{
-//				BaseOID:            u.cfg.OltCfg.BaseOID1,
-//				OnuIDNameOID:       u.cfg.Board1Pon6.OnuIDNameOID,
-//				OnuTypeOID:         u.cfg.Board1Pon6.OnuTypeOID,
-//				OnuSerialNumberOID: u.cfg.Board1Pon6.OnuSerialNumberOID,
-//				OnuRxPowerOID:      u.cfg.Board1Pon6.OnuRxPowerOID,
-//				OnuTxPowerOID:      u.cfg.Board1Pon6.OnuTxPowerOID,
-//				OnuStatusOID:       u.cfg.Board1Pon6.OnuStatusOID,
-//				OnuIPAddressOID:    u.cfg.Board1Pon6.OnuIPAddressOID,
-//				OnuDescriptionOID:  u.cfg.Board1Pon6.OnuDescriptionOID,
-//			}, nil
-//		case 7: // PON 7
-//			return &model.OltConfig{
-//				BaseOID:            u.cfg.OltCfg.BaseOID1,
-//				OnuIDNameOID:       u.cfg.Board1Pon7.OnuIDNameOID,
-//				OnuTypeOID:         u.cfg.Board1Pon7.OnuTypeOID,
-//				OnuSerialNumberOID: u.cfg.Board1Pon7.OnuSerialNumberOID,
-//				OnuRxPowerOID:      u.cfg.Board1Pon7.OnuRxPowerOID,
-//				OnuTxPowerOID:      u.cfg.Board1Pon7.OnuTxPowerOID,
-//				OnuStatusOID:       u.cfg.Board1Pon7.OnuStatusOID,
-//				OnuIPAddressOID:    u.cfg.Board1Pon7.OnuIPAddressOID,
-//				OnuDescriptionOID:  u.cfg.Board1Pon7.OnuDescriptionOID,
-//			}, nil
-//		case 8: // PON 8
-//			return &model.OltConfig{
-//				BaseOID:            u.cfg.OltCfg.BaseOID1,
-//				OnuIDNameOID:       u.cfg.Board1Pon8.OnuIDNameOID,
-//				OnuTypeOID:         u.cfg.Board1Pon8.OnuTypeOID,
-//				OnuSerialNumberOID: u.cfg.Board1Pon8.OnuSerialNumberOID,
-//				OnuRxPowerOID:      u.cfg.Board1Pon8.OnuRxPowerOID,
-//				OnuTxPowerOID:      u.cfg.Board1Pon8.OnuTxPowerOID,
-//				OnuStatusOID:       u.cfg.Board1Pon8.OnuStatusOID,
-//				OnuIPAddressOID:    u.cfg.Board1Pon8.OnuIPAddressOID,
-//				OnuDescriptionOID:  u.cfg.Board1Pon8.OnuDescriptionOID,
-//			}, nil
-//		default: // Invalid PON ID
-//			log.Error().Msg("Invalid PON ID")        // Log error message to logger
-//			return nil, errors.New("invalid PON ID") // Return error
-//		}
-//	case 2: // Board 2
-//		switch ponID {
-//		case 1: // PON 1
-//			return &model.OltConfig{
-//				BaseOID:            u.cfg.OltCfg.BaseOID1,
-//				OnuIDNameOID:       u.cfg.Board2Pon1.OnuIDNameOID,
-//				OnuTypeOID:         u.cfg.Board2Pon1.OnuTypeOID,
-//				OnuSerialNumberOID: u.cfg.Board2Pon1.OnuSerialNumberOID,
-//				OnuRxPowerOID:      u.cfg.Board2Pon1.OnuRxPowerOID,
-//				OnuTxPowerOID:      u.cfg.Board2Pon1.OnuTxPowerOID,
-//				OnuStatusOID:       u.cfg.Board2Pon1.OnuStatusOID,
-//				OnuIPAddressOID:    u.cfg.Board2Pon1.OnuIPAddressOID,
-//				OnuDescriptionOID:  u.cfg.Board2Pon1.OnuDescriptionOID,
-//			}, nil
-//		case 2: // PON 2
-//			return &model.OltConfig{
-//				BaseOID:            u.cfg.OltCfg.BaseOID1,
-//				OnuIDNameOID:       u.cfg.Board2Pon2.OnuIDNameOID,
-//				OnuTypeOID:         u.cfg.Board2Pon2.OnuTypeOID,
-//				OnuSerialNumberOID: u.cfg.Board2Pon2.OnuSerialNumberOID,
-//				OnuRxPowerOID:      u.cfg.Board2Pon2.OnuRxPowerOID,
-//				OnuTxPowerOID:      u.cfg.Board2Pon2.OnuTxPowerOID,
-//				OnuStatusOID:       u.cfg.Board2Pon2.OnuStatusOID,
-//				OnuIPAddressOID:    u.cfg.Board2Pon2.OnuIPAddressOID,
-//				OnuDescriptionOID:  u.cfg.Board2Pon2.OnuDescriptionOID,
-//			}, nil
-//		case 3: // PON 3
-//			return &model.OltConfig{
-//				BaseOID:            u.cfg.OltCfg.BaseOID1,
-//				OnuIDNameOID:       u.cfg.Board2Pon3.OnuIDNameOID,
-//				OnuTypeOID:         u.cfg.Board2Pon3.OnuTypeOID,
-//				OnuSerialNumberOID: u.cfg.Board2Pon3.OnuSerialNumberOID,
-//				OnuRxPowerOID:      u.cfg.Board2Pon3.OnuRxPowerOID,
-//				OnuTxPowerOID:      u.cfg.Board2Pon3.OnuTxPowerOID,
-//				OnuStatusOID:       u.cfg.Board2Pon3.OnuStatusOID,
-//				OnuIPAddressOID:    u.cfg.Board2Pon3.OnuIPAddressOID,
-//				OnuDescriptionOID:  u.cfg.Board2Pon3.OnuDescriptionOID,
-//			}, nil
-//		case 4: // PON 4
-//			return &model.OltConfig{
-//				BaseOID:            u.cfg.OltCfg.BaseOID1,
-//				OnuIDNameOID:       u.cfg.Board2Pon4.OnuIDNameOID,
-//				OnuTypeOID:         u.cfg.Board2Pon4.OnuTypeOID,
-//				OnuSerialNumberOID: u.cfg.Board2Pon4.OnuSerialNumberOID,
-//				OnuRxPowerOID:      u.cfg.Board2Pon4.OnuRxPowerOID,
-//				OnuTxPowerOID:      u.cfg.Board2Pon4.OnuTxPowerOID,
-//				OnuStatusOID:       u.cfg.Board2Pon4.OnuStatusOID,
-//				OnuIPAddressOID:    u.cfg.Board2Pon4.OnuIPAddressOID,
-//				OnuDescriptionOID:  u.cfg.Board2Pon4.OnuDescriptionOID,
-//			}, nil
-//		case 5: // PON 5
-//			return &model.OltConfig{
-//				BaseOID:            u.cfg.OltCfg.BaseOID1,
-//				OnuIDNameOID:       u.cfg.Board2Pon5.OnuIDNameOID,
-//				OnuTypeOID:         u.cfg.Board2Pon5.OnuTypeOID,
-//				OnuSerialNumberOID: u.cfg.Board2Pon5.OnuSerialNumberOID,
-//				OnuRxPowerOID:      u.cfg.Board2Pon5.OnuRxPowerOID,
-//				OnuTxPowerOID:      u.cfg.Board2Pon5.OnuTxPowerOID,
-//				OnuStatusOID:       u.cfg.Board2Pon5.OnuStatusOID,
-//				OnuIPAddressOID:    u.cfg.Board2Pon5.OnuIPAddressOID,
-//				OnuDescriptionOID:  u.cfg.Board2Pon5.OnuDescriptionOID,
-//			}, nil
-//		case 6: // PON 6
-//			return &model.OltConfig{
-//				BaseOID:            u.cfg.OltCfg.BaseOID1,
-//				OnuIDNameOID:       u.cfg.Board2Pon6.OnuIDNameOID,
-//				OnuTypeOID:         u.cfg.Board2Pon6.OnuTypeOID,
-//				OnuSerialNumberOID: u.cfg.Board2Pon6.OnuSerialNumberOID,
-//				OnuRxPowerOID:      u.cfg.Board2Pon6.OnuRxPowerOID,
-//				OnuTxPowerOID:      u.cfg.Board2Pon6.OnuTxPowerOID,
-//				OnuStatusOID:       u.cfg.Board2Pon6.OnuStatusOID,
-//				OnuIPAddressOID:    u.cfg.Board2Pon6.OnuIPAddressOID,
-//				OnuDescriptionOID:  u.cfg.Board2Pon6.OnuDescriptionOID,
-//			}, nil
-//		case 7: // PON 7
-//			return &model.OltConfig{
-//				BaseOID:            u.cfg.OltCfg.BaseOID1,
-//				OnuIDNameOID:       u.cfg.Board2Pon7.OnuIDNameOID,
-//				OnuTypeOID:         u.cfg.Board2Pon7.OnuTypeOID,
-//				OnuSerialNumberOID: u.cfg.Board2Pon7.OnuSerialNumberOID,
-//				OnuRxPowerOID:      u.cfg.Board2Pon7.OnuRxPowerOID,
-//				OnuTxPowerOID:      u.cfg.Board2Pon7.OnuTxPowerOID,
-//				OnuStatusOID:       u.cfg.Board2Pon7.OnuStatusOID,
-//				OnuIPAddressOID:    u.cfg.Board2Pon7.OnuIPAddressOID,
-//				OnuDescriptionOID:  u.cfg.Board2Pon7.OnuDescriptionOID,
-//			}, nil
-//		case 8: // PON 8
-//			return &model.OltConfig{
-//				BaseOID:            u.cfg.OltCfg.BaseOID1,
-//				OnuIDNameOID:       u.cfg.Board2Pon8.OnuIDNameOID,
-//				OnuTypeOID:         u.cfg.Board2Pon8.OnuTypeOID,
-//				OnuSerialNumberOID: u.cfg.Board2Pon8.OnuSerialNumberOID,
-//				OnuRxPowerOID:      u.cfg.Board2Pon8.OnuRxPowerOID,
-//				OnuTxPowerOID:      u.cfg.Board2Pon8.OnuTxPowerOID,
-//				OnuStatusOID:       u.cfg.Board2Pon8.OnuStatusOID,
-//				OnuIPAddressOID:    u.cfg.Board2Pon8.OnuIPAddressOID,
-//				OnuDescriptionOID:  u.cfg.Board2Pon8.OnuDescriptionOID,
-//			}, nil
-//		default: // Invalid PON ID
-//			log.Error().Msg("Invalid PON ID")        // Log error message to logger
-//			return nil, errors.New("invalid PON ID") // Return error
-//		}
-//	default: // Invalid Board ID
-//		log.Error().Msg("Invalid Board ID")        // Log error message to logger
-//		return nil, errors.New("invalid Board ID") // Return error
-//	}
-//}
-
 func (u *onuUsecase) GetByBoardIDAndPonID(ctx context.Context, boardID, ponID int) ([]model.ONUInfoPerBoard, error) {
-
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second) // Create context with timeout 60 seconds
-	defer cancel()                                                           // Cancel context when function is done
 
 	// Log info message to logger
 	log.Info().Msg("Get All ONU Information from Board ID: " + strconv.Itoa(boardID) + " and PON ID: " + strconv.Itoa(
@@ -690,9 +473,6 @@ func (u *onuUsecase) GetByBoardIDPonIDAndOnuID(boardID, ponID, onuID int) (
 
 func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]model.OnuID, error) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second) // Create context with timeout 60 seconds
-	defer cancel()                                                           // Cancel context when function is done
-
 	// Get OLT config based on Board ID and PON ID
 	oltConfig, err := u.getOltConfig(boardID, ponID)
 	if err != nil {
@@ -777,9 +557,6 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]m
 }
 
 func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) error {
-
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second) // Create context with timeout 60 seconds
-	defer cancel()                                                           // Cancel context when function is done
 
 	// Get OLT config based on Board ID and PON ID
 	oltConfig, err := u.getOltConfig(boardID, ponID)
