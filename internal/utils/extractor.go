@@ -10,33 +10,34 @@ func ExtractONUID(oid string) string {
 	// Split the OID name and take the last component
 	parts := strings.Split(oid, ".")
 	if len(parts) > 0 {
-		return parts[len(parts)-1]
+		// Check if the last component is a valid number
+		lastComponent := parts[len(parts)-1]
+		if _, err := strconv.Atoi(lastComponent); err == nil {
+			return lastComponent
+		}
 	}
-	return "0" // Return 0 if the OID is invalid or empty (default value)
+	return "" // Return an empty string if the OID is invalid or empty (default value)
 }
 
 func ExtractIDOnuID(oid interface{}) int {
-	// Check if oid is nil
 	if oid == nil {
 		return 0
 	}
 
-	// Check if oid is a string
-	oidStr, ok := oid.(string)
-	if !ok {
+	switch v := oid.(type) {
+	case string:
+		parts := strings.Split(v, ".")
+		if len(parts) > 0 {
+			lastPart := parts[len(parts)-1]
+			id, err := strconv.Atoi(lastPart)
+			if err == nil {
+				return id
+			}
+		}
+		return 0
+	default:
 		return 0
 	}
-
-	// Split the OID name and take the last component
-	parts := strings.Split(oidStr, ".")
-	if len(parts) > 0 {
-		id, err := strconv.Atoi(parts[len(parts)-1])
-		if err != nil {
-			return 0
-		}
-		return id
-	}
-	return 0
 }
 
 func ExtractName(oidValue interface{}) string {
@@ -49,7 +50,7 @@ func ExtractName(oidValue interface{}) string {
 		return string(v)
 	default:
 		// Data type is not recognized, you can handle this case according to your needs.
-		return "0" // Return 0 if the OID is invalid or empty (default value)
+		return "Unknown" // Return "Unknown" if the OID is invalid or empty
 	}
 }
 
@@ -71,7 +72,7 @@ func ExtractSerialNumber(oidValue interface{}) string {
 		return strValue // Data is byte slice, convert to string
 	default:
 		// Data type is not recognized, you can handle this case according to your needs.
-		return "0" // Return 0 if the OID is invalid or empty (default value)
+		return "" // Return 0 if the OID is invalid or empty (default value)
 	}
 }
 
@@ -79,7 +80,7 @@ func ConvertAndMultiply(pduValue interface{}) (string, error) {
 	// Type assert pduValue to an integer type
 	intValue, ok := pduValue.(int)
 	if !ok {
-		return "0", fmt.Errorf("value is not an integer")
+		return "", fmt.Errorf("value is not an integer")
 	}
 
 	// Multiply the integer by 0.002
@@ -95,10 +96,9 @@ func ConvertAndMultiply(pduValue interface{}) (string, error) {
 }
 
 func ExtractAndGetStatus(oidValue interface{}) string {
-	// Extract the interface value to an integer type
-	intValue, err := strconv.Atoi(strconv.Itoa(oidValue.(int)))
-	if err != nil {
-		// Handle error
+	// Check if oidValue is not an integer
+	intValue, ok := oidValue.(int)
+	if !ok {
 		return "Unknown"
 	}
 
