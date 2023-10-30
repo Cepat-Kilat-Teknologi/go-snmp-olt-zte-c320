@@ -12,7 +12,7 @@ func ExtractONUID(oid string) string {
 	if len(parts) > 0 {
 		return parts[len(parts)-1]
 	}
-	return ""
+	return "0" // Return 0 if the OID is invalid or empty (default value)
 }
 
 func ExtractIDOnuID(oid interface{}) int {
@@ -49,7 +49,7 @@ func ExtractName(oidValue interface{}) string {
 		return string(v)
 	default:
 		// Data type is not recognized, you can handle this case according to your needs.
-		return ""
+		return "0" // Return 0 if the OID is invalid or empty (default value)
 	}
 }
 
@@ -71,7 +71,7 @@ func ExtractSerialNumber(oidValue interface{}) string {
 		return strValue // Data is byte slice, convert to string
 	default:
 		// Data type is not recognized, you can handle this case according to your needs.
-		return ""
+		return "0" // Return 0 if the OID is invalid or empty (default value)
 	}
 }
 
@@ -79,7 +79,7 @@ func ConvertAndMultiply(pduValue interface{}) (string, error) {
 	// Type assert pduValue to an integer type
 	intValue, ok := pduValue.(int)
 	if !ok {
-		return "", fmt.Errorf("value is not an integer")
+		return "0", fmt.Errorf("value is not an integer")
 	}
 
 	// Multiply the integer by 0.002
@@ -99,7 +99,7 @@ func ExtractAndGetStatus(oidValue interface{}) string {
 	intValue, err := strconv.Atoi(strconv.Itoa(oidValue.(int)))
 	if err != nil {
 		// Handle error
-		return ""
+		return "Unknown"
 	}
 
 	switch intValue {
