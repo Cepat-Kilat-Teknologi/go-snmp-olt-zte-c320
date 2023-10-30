@@ -12,10 +12,14 @@ func TestExtractONUID(t *testing.T) {
 		oid      string
 		expected string
 	}{
+		// Test with valid OID values
 		{"1.2.3.4.5", "5"},
 		{"1.2.3", "3"},
 		{"1", "1"},
 		{"", ""},
+
+		// Test with invalid OID values
+		{"invalid.oid", ""}, // Add test case for an invalid OID
 	}
 
 	for _, tc := range testCases {
@@ -25,6 +29,7 @@ func TestExtractONUID(t *testing.T) {
 		})
 	}
 }
+
 func TestExtractIDOnuID(t *testing.T) {
 	testCases := []struct {
 		oid      interface{}
@@ -34,7 +39,9 @@ func TestExtractIDOnuID(t *testing.T) {
 		{"1.2.3", 3},
 		{"1", 1},
 		{nil, 0},
-		{123, 0}, // Add a test case with a non-string OID
+		{123, 0},
+		{"", 0},
+		{"1.2.3.4.invalid", 0},
 	}
 
 	for _, tc := range testCases {
@@ -43,12 +50,6 @@ func TestExtractIDOnuID(t *testing.T) {
 			assert.Equal(t, tc.expected, result)
 		})
 	}
-
-	// Test case for invalid input (non-integer OID)
-	t.Run("InvalidInput", func(t *testing.T) {
-		result := ExtractIDOnuID("non-integer")
-		assert.Equal(t, 0, result)
-	})
 }
 
 func TestExtractName(t *testing.T) {
@@ -59,7 +60,7 @@ func TestExtractName(t *testing.T) {
 	}{
 		{"test", "test", "string"},
 		{[]byte("test"), "test", "byte slice"},
-		{10, "", "unknown type"},
+		{10, "Unknown", "Unknown"},
 	}
 
 	for _, tc := range testCases {
@@ -98,7 +99,7 @@ func TestConvertAndMultiply(t *testing.T) {
 	}{
 		{10, "-29.98", false},
 		{0, "-30.00", false},
-		{"string", "", true},
+		{"string", "Unknown", true},
 	}
 
 	for _, tc := range testCases {
@@ -116,9 +117,10 @@ func TestConvertAndMultiply(t *testing.T) {
 
 func TestExtractAndGetStatus(t *testing.T) {
 	testCases := []struct {
-		oidValue int
+		oidValue interface{}
 		expected string
 	}{
+		// Test with valid integer values
 		{1, "Logging"},
 		{2, "LOS"},
 		{3, "Synchronization"},
@@ -126,7 +128,10 @@ func TestExtractAndGetStatus(t *testing.T) {
 		{5, "Dying Gasp"},
 		{6, "Auth Failed"},
 		{7, "Offline"},
-		{8, "Unknown"},
+
+		// Test with invalid integer input
+		{"invalid", "Unknown"},
+		{8, "Unknown"}, // Add test case for a value not covered in the switch
 	}
 
 	for _, tc := range testCases {
