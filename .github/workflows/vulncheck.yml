@@ -1,4 +1,4 @@
-name: Run govulncheck
+name: vulnerability-check
 
 on:
   push:
