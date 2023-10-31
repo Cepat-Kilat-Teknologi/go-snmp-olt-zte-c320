@@ -1,0 +1,40 @@
+name: tests
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "**"
+      - "!docs/**"
+      - "!**.md"
+
+jobs:
+
+  test:
+    name: tests
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.2'
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Test
+        run: go test ./... -v -race -count=1
+
+      - name: Generate code coverage report
+        run: |
+          go test -coverprofile=coverage.out ./...
+        env:
+          GOCACHE: /tmp/.cache
+          GO111MODULE: on
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.out
