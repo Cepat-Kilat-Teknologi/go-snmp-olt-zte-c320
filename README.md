@@ -209,7 +209,7 @@ curl -sS localhost:8081/api/v1/board/2/pon/5/onu_id/update | jq
 
 ### Test with curl GET method Get Onu Information in Board 2 Pon 8 with paginate
 ```shell
-curl -sS 'http://103.165.157.63:8081/api/v1/paginate/board/2/pon/8?limit=3&page=2' | jq
+curl -sS 'http://localhost:8081/api/v1/paginate/board/2/pon/8?limit=3&page=2' | jq
 ```
 ### Result
 ```json
