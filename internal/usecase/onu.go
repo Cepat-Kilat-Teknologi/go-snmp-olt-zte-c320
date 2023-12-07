@@ -17,7 +17,7 @@ type OnuUseCaseInterface interface {
 	GetByBoardIDAndPonID(ctx context.Context, boardID, ponID int) ([]model.ONUInfoPerBoard, error)
 	GetByBoardIDPonIDAndOnuID(boardID, ponID, onuID int) (model.ONUCustomerInfo, error)
 	GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]model.OnuID, error)
-	GetOnuSerialNumber(ctx context.Context, boardID, ponID int) ([]model.OnuSerialNumber, error)
+	GetOnuIDAndSerialNumber(ctx context.Context, boardID, ponID int) ([]model.OnuSerialNumber, error)
 	UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) error
 	GetByBoardIDAndPonIDWithPagination(boardID, ponID, page, pageSize int) (
 		[]model.ONUInfoPerBoard, int,
@@ -557,7 +557,7 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]m
 	return emptyOnuIDList, nil
 }
 
-func (u *onuUsecase) GetOnuSerialNumber(ctx context.Context, boardID, ponID int) (
+func (u *onuUsecase) GetOnuIDAndSerialNumber(ctx context.Context, boardID, ponID int) (
 	[]model.OnuSerialNumber, error,
 ) {
 
@@ -566,16 +566,6 @@ func (u *onuUsecase) GetOnuSerialNumber(ctx context.Context, boardID, ponID int)
 	if err != nil {
 		log.Error().Msg("Failed to get OLT Config: " + err.Error()) // Log error message to logger
 		return nil, err                                             // Return error if error is not nil
-	}
-
-	// Redis Key
-	redisKey := "board_" + strconv.Itoa(boardID) + "_pon_" + strconv.Itoa(ponID) + "_serial_number"
-
-	// Try to get data from Redis using GetSerialNumberCtx method with context and Redis key as parameter
-	cachedOnuData, err := u.redisRepository.GetOnuSerialNumberCtx(ctx, redisKey)
-	if err == nil && cachedOnuData != nil {
-		log.Info().Msg("Get ONU Serial Number from Redis with Key: " + redisKey) // Log info message to logger
-		return cachedOnuData, nil                                                // Return cached data if error is nil and cached data is not nil
 	}
 
 	// Perform SNMP Walk to get ONU ID
@@ -624,16 +614,6 @@ func (u *onuUsecase) GetOnuSerialNumber(ctx context.Context, boardID, ponID int)
 	sort.Slice(onuSerialNumberList, func(i, j int) bool {
 		return onuSerialNumberList[i].ID < onuSerialNumberList[j].ID
 	})
-
-	// Save ONU Serial Number list to Redis 12 hours
-	err = u.redisRepository.SetOnuSerialNumberCtx(ctx, redisKey, 300, onuSerialNumberList)
-
-	log.Info().Msg("Save ONU Serial Number to Redis with Key: " + redisKey) // Log info message to logger
-
-	if err != nil {
-		log.Error().Msg("Failed to save ONU Serial Number to Redis: " + err.Error()) // Log error message to logger
-		return nil, err                                                              // Return error if error is not nil
-	}
 
 	return onuSerialNumberList, nil // Return ONU Serial Number list and nil error
 
