@@ -310,7 +310,7 @@ func (u *onuUsecase) GetByBoardIDAndPonID(ctx context.Context, boardID, ponID in
 	log.Info().Msg("Get All ONU Information from SNMP Walk Board ID: " + strconv.Itoa(
 		boardID) + " and PON ID: " + strconv.Itoa(ponID)) // Log info message to logger
 
-	err = u.snmpRepository.BulkWalk(oltConfig.BaseOID+oltConfig.OnuIDNameOID, func(pdu gosnmp.SnmpPDU) error {
+	err = u.snmpRepository.Walk(oltConfig.BaseOID+oltConfig.OnuIDNameOID, func(pdu gosnmp.SnmpPDU) error {
 		// Store SNMP data to map with ONU ID as key and PDU as value to be used later
 		snmpDataMap[utils.ExtractONUID(pdu.Name)] = pdu // Extract ONU ID from SNMP PDU Name and use it as key in map
 		return nil                                      // Return nil error
@@ -499,7 +499,7 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]m
 		boardID) + " and PON ID: " + strconv.Itoa(ponID)) // Log info message to logger
 
 	// Perform SNMP BulkWalk to get ONU ID and Name using snmpRepository BulkWalk method with timeout context parameter
-	err = u.snmpRepository.BulkWalk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
+	err = u.snmpRepository.Walk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
 		idOnuID := utils.ExtractIDOnuID(pdu.Name) // Extract ONU ID from SNMP PDU Name
 
 		// Append ONU information to the emptyOnuIDList
@@ -574,7 +574,7 @@ func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) e
 		Itoa(ponID)) // Log info message to logger
 
 	// Perform SNMP BulkWalk to get ONU ID and Name using snmpRepository BulkWalk method with timeout context parameter
-	err = u.snmpRepository.BulkWalk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
+	err = u.snmpRepository.Walk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
 		idOnuID := utils.ExtractIDOnuID(pdu.Name) // Extract ONU ID from SNMP PDU Name
 
 		// Append ONU information to the emptyOnuIDList
@@ -651,7 +651,7 @@ func (u *onuUsecase) GetByBoardIDAndPonIDWithPagination(
 
 	// If data not exist in Redis, then get data from SNMP
 	if len(onlyOnuIDList) == 0 {
-		err := u.snmpRepository.BulkWalk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
+		err := u.snmpRepository.Walk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
 			onlyOnuIDList = append(onlyOnuIDList, model.OnuOnlyID{
 				ID: utils.ExtractIDOnuID(pdu.Name),
 			})
