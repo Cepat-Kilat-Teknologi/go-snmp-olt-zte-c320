@@ -37,6 +37,7 @@ func loadRoutes(onuHandler *handler.OnuHandler) http.Handler {
 		r.Get("/{board_id}/pon/{pon_id}", onuHandler.GetByBoardIDAndPonID)
 		r.Get("/{board_id}/pon/{pon_id}/onu/{onu_id}", onuHandler.GetByBoardIDPonIDAndOnuID)
 		r.Get("/{board_id}/pon/{pon_id}/onu_id/empty", onuHandler.GetEmptyOnuID)
+		r.Get("/{board_id}/pon/{pon_id}/onu_sn", onuHandler.GetOnuSerialNumber)
 		r.Get("/{board_id}/pon/{pon_id}/onu_id/update", onuHandler.UpdateEmptyOnuID)
 	})
 
