@@ -17,7 +17,7 @@ type OnuUseCaseInterface interface {
 	GetByBoardIDAndPonID(ctx context.Context, boardID, ponID int) ([]model.ONUInfoPerBoard, error)
 	GetByBoardIDPonIDAndOnuID(boardID, ponID, onuID int) (model.ONUCustomerInfo, error)
 	GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]model.OnuID, error)
-	GetOnuIDAndSerialNumber(ctx context.Context, boardID, ponID int) ([]model.OnuSerialNumber, error)
+	GetOnuIDAndSerialNumber(boardID, ponID int) ([]model.OnuSerialNumber, error)
 	UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) error
 	GetByBoardIDAndPonIDWithPagination(boardID, ponID, page, pageSize int) (
 		[]model.ONUInfoPerBoard, int,
@@ -557,7 +557,7 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]m
 	return emptyOnuIDList, nil
 }
 
-func (u *onuUsecase) GetOnuIDAndSerialNumber(ctx context.Context, boardID, ponID int) (
+func (u *onuUsecase) GetOnuIDAndSerialNumber(boardID, ponID int) (
 	[]model.OnuSerialNumber, error,
 ) {
 

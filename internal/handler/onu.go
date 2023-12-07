@@ -15,7 +15,7 @@ type OnuHandlerInterface interface {
 	GetByBoardIDAndPonID(w http.ResponseWriter, r *http.Request)
 	GetByBoardIDPonIDAndOnuID(w http.ResponseWriter, r *http.Request)
 	GetEmptyOnuID(w http.ResponseWriter, r *http.Request)
-	GetOnuSerialNumber(w http.ResponseWriter, r *http.Request)
+	GetOnuIDAndSerialNumber(w http.ResponseWriter, r *http.Request)
 	UpdateEmptyOnuID(w http.ResponseWriter, r *http.Request)
 	GetByBoardIDAndPonIDWithPaginate(w http.ResponseWriter, r *http.Request)
 }
@@ -210,7 +210,7 @@ func (o *OnuHandler) GetEmptyOnuID(w http.ResponseWriter, r *http.Request) {
 	utils.SendJSONResponse(w, http.StatusOK, response) // 200
 }
 
-func (o *OnuHandler) GetOnuSerialNumber(w http.ResponseWriter, r *http.Request) {
+func (o *OnuHandler) GetOnuIDAndSerialNumber(w http.ResponseWriter, r *http.Request) {
 
 	boardID := chi.URLParam(r, "board_id") // 1 or 2
 	ponID := chi.URLParam(r, "pon_id")     // 1 - 8
@@ -236,7 +236,7 @@ func (o *OnuHandler) GetOnuSerialNumber(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Call usecase to get Serial Number from SNMP
-	onuSerialNumber, err := o.ponUsecase.GetOnuIDAndSerialNumber(r.Context(), boardIDInt, ponIDInt)
+	onuSerialNumber, err := o.ponUsecase.GetOnuIDAndSerialNumber(boardIDInt, ponIDInt)
 
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get data from SNMP")
