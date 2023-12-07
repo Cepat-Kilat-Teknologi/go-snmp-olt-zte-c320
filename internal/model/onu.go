@@ -58,3 +58,10 @@ type SNMPWalkTask struct {
 	BoardID   int
 	PON       int
 }
+
+type OnuSerialNumber struct {
+	Board        int    `json:"board"`
+	PON          int    `json:"pon"`
+	ID           int    `json:"onu_id"`
+	SerialNumber string `json:"serial_number"`
+}
