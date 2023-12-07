@@ -17,6 +17,7 @@ type OnuUseCaseInterface interface {
 	GetByBoardIDAndPonID(ctx context.Context, boardID, ponID int) ([]model.ONUInfoPerBoard, error)
 	GetByBoardIDPonIDAndOnuID(boardID, ponID, onuID int) (model.ONUCustomerInfo, error)
 	GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]model.OnuID, error)
+	GetOnuSerialNumber(ctx context.Context, boardID, ponID int) ([]model.OnuSerialNumber, error)
 	UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) error
 	GetByBoardIDAndPonIDWithPagination(boardID, ponID, page, pageSize int) (
 		[]model.ONUInfoPerBoard, int,
@@ -554,6 +555,88 @@ func (u *onuUsecase) GetEmptyOnuID(ctx context.Context, boardID, ponID int) ([]m
 	log.Info().Msg("Save Empty ONU ID to Redis with Key: " + redisKey) // Log info message to logger
 
 	return emptyOnuIDList, nil
+}
+
+func (u *onuUsecase) GetOnuSerialNumber(ctx context.Context, boardID, ponID int) (
+	[]model.OnuSerialNumber, error,
+) {
+
+	// Get OLT config based on Board ID and PON ID
+	oltConfig, err := u.getOltConfig(boardID, ponID)
+	if err != nil {
+		log.Error().Msg("Failed to get OLT Config: " + err.Error()) // Log error message to logger
+		return nil, err                                             // Return error if error is not nil
+	}
+
+	// Redis Key
+	redisKey := "board_" + strconv.Itoa(boardID) + "_pon_" + strconv.Itoa(ponID) + "_serial_number"
+
+	// Try to get data from Redis using GetSerialNumberCtx method with context and Redis key as parameter
+	cachedOnuData, err := u.redisRepository.GetOnuSerialNumberCtx(ctx, redisKey)
+	if err == nil && cachedOnuData != nil {
+		log.Info().Msg("Get ONU Serial Number from Redis with Key: " + redisKey) // Log info message to logger
+		return cachedOnuData, nil                                                // Return cached data if error is nil and cached data is not nil
+	}
+
+	// Perform SNMP Walk to get ONU ID
+	snmpOID := oltConfig.BaseOID + oltConfig.OnuIDNameOID // SNMP OID variable
+	onuIDList := make([]model.OnuID, 0)                   // Create a slice of ONU ID
+
+	log.Info().Msg("Get ONU ID with SNMP Walk from Board ID: " + strconv.Itoa(
+		boardID) + " and PON ID: " + strconv.Itoa(ponID)) // Log info message to logger
+
+	// Perform SNMP BulkWalk to get ONU ID and Name using snmpRepository BulkWalk method with timeout context parameter
+	err = u.snmpRepository.Walk(snmpOID, func(pdu gosnmp.SnmpPDU) error {
+		idOnuID := utils.ExtractIDOnuID(pdu.Name) // Extract ONU ID from SNMP PDU Name
+		// Append ONU information to the onuIDList
+		onuIDList = append(onuIDList, model.OnuID{
+			Board: boardID, // Set Board ID to ONU onuInfo struct Board field
+			PON:   ponID,   // Set PON ID to ONU onuInfo  struct PON field
+			ID:    idOnuID, // Set ONU ID (extracted from SNMP PDU) to onuInfo variable (ONU ID)
+		})
+
+		return nil
+	})
+
+	if err != nil {
+		log.Error().Msg("Failed to perform SNMP Walk get ONU ID: " + err.Error()) // Log error message to logger
+		return nil, err
+	}
+
+	// Create a slice of ONU Serial Number
+	var onuSerialNumberList []model.OnuSerialNumber
+
+	// Loop through onuIDList to get ONU Serial Number
+	for _, onuInfo := range onuIDList {
+		// Get Data ONU Serial Number from SNMP Walk using getSerialNumber method
+		onuSerialNumber, err := u.getSerialNumber(oltConfig.OnuSerialNumberOID, strconv.Itoa(onuInfo.ID))
+		if err == nil {
+			onuSerialNumberList = append(onuSerialNumberList, model.OnuSerialNumber{
+				Board:        boardID, // Set Board ID to ONU onuInfo struct Board field
+				PON:          ponID,   // Set PON ID to ONU onuInfo  struct PON field
+				ID:           onuInfo.ID,
+				SerialNumber: onuSerialNumber, // Set ONU Serial Number from SNMP Walk result to onuInfo variable (ONU Serial Number)
+			})
+		}
+	}
+
+	// Sort ONU Serial Number list based on ONU ID ascending
+	sort.Slice(onuSerialNumberList, func(i, j int) bool {
+		return onuSerialNumberList[i].ID < onuSerialNumberList[j].ID
+	})
+
+	// Save ONU Serial Number list to Redis 12 hours
+	err = u.redisRepository.SetOnuSerialNumberCtx(ctx, redisKey, 300, onuSerialNumberList)
+
+	log.Info().Msg("Save ONU Serial Number to Redis with Key: " + redisKey) // Log info message to logger
+
+	if err != nil {
+		log.Error().Msg("Failed to save ONU Serial Number to Redis: " + err.Error()) // Log error message to logger
+		return nil, err                                                              // Return error if error is not nil
+	}
+
+	return onuSerialNumberList, nil // Return ONU Serial Number list and nil error
+
 }
 
 func (u *onuUsecase) UpdateEmptyOnuID(ctx context.Context, boardID, ponID int) error {
