@@ -15,6 +15,7 @@ type OnuHandlerInterface interface {
 	GetByBoardIDAndPonID(w http.ResponseWriter, r *http.Request)
 	GetByBoardIDPonIDAndOnuID(w http.ResponseWriter, r *http.Request)
 	GetEmptyOnuID(w http.ResponseWriter, r *http.Request)
+	GetOnuSerialNumber(w http.ResponseWriter, r *http.Request)
 	UpdateEmptyOnuID(w http.ResponseWriter, r *http.Request)
 	GetByBoardIDAndPonIDWithPaginate(w http.ResponseWriter, r *http.Request)
 }
@@ -204,6 +205,52 @@ func (o *OnuHandler) GetEmptyOnuID(w http.ResponseWriter, r *http.Request) {
 		Code:   http.StatusOK,  // 200
 		Status: "OK",           // "OK"
 		Data:   onuIDEmptyList, // data
+	}
+
+	utils.SendJSONResponse(w, http.StatusOK, response) // 200
+}
+
+func (o *OnuHandler) GetOnuSerialNumber(w http.ResponseWriter, r *http.Request) {
+
+	boardID := chi.URLParam(r, "board_id") // 1 or 2
+	ponID := chi.URLParam(r, "pon_id")     // 1 - 8
+
+	boardIDInt, err := strconv.Atoi(boardID) // convert string to int
+
+	log.Info().Msg("Received a request to GetOnuSerialNumber")
+
+	// Validate boardIDInt value and return error 400 if boardIDInt is not 1 or 2
+	if err != nil || (boardIDInt != 1 && boardIDInt != 2) {
+		log.Error().Err(err).Msg("Invalid 'board_id' parameter")
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'board_id' parameter. It must be 1 or 2")) // error 400
+		return
+	}
+
+	ponIDInt, err := strconv.Atoi(ponID) // convert string to int
+
+	// Validate ponIDInt value and return error 400 if ponIDInt is not between 1 and 8
+	if err != nil || ponIDInt < 1 || ponIDInt > 8 {
+		log.Error().Err(err).Msg("Invalid 'pon_id' parameter")
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid 'pon_id' parameter. It must be between 1 and 8")) // error 400
+		return
+	}
+
+	// Call usecase to get Serial Number from SNMP
+	onuSerialNumber, err := o.ponUsecase.GetOnuSerialNumber(r.Context(), boardIDInt, ponIDInt)
+
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get data from SNMP")
+		utils.ErrorInternalServerError(w, fmt.Errorf("cannot get data from snmp")) // error 500
+		return
+	}
+
+	log.Info().Msg("Successfully retrieved data from SNMP")
+
+	// Convert result to JSON format according to WebResponse structure
+	response := utils.WebResponse{
+		Code:   http.StatusOK,   // 200
+		Status: "OK",            // "OK"
+		Data:   onuSerialNumber, // data
 	}
 
 	utils.SendJSONResponse(w, http.StatusOK, response) // 200
