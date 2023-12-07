@@ -236,7 +236,7 @@ func (o *OnuHandler) GetOnuSerialNumber(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Call usecase to get Serial Number from SNMP
-	onuSerialNumber, err := o.ponUsecase.GetOnuSerialNumber(r.Context(), boardIDInt, ponIDInt)
+	onuSerialNumber, err := o.ponUsecase.GetOnuIDAndSerialNumber(r.Context(), boardIDInt, ponIDInt)
 
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get data from SNMP")
@@ -246,7 +246,7 @@ func (o *OnuHandler) GetOnuSerialNumber(w http.ResponseWriter, r *http.Request) 
 
 	log.Info().Msg("Successfully retrieved data from SNMP")
 
-	// Convert result to JSON format according to WebResponse structure
+	// Convert a result to JSON format according to WebResponse structure
 	response := utils.WebResponse{
 		Code:   http.StatusOK,   // 200
 		Status: "OK",            // "OK"
