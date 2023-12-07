@@ -55,7 +55,7 @@ func (a *App) Start(ctx context.Context) error {
 	}(redisClient)
 
 	// Initialize SNMP connection
-	snmpConn, err := snmp.SetupSnmpConnection(ctx, cfg)
+	snmpConn, err := snmp.SetupSnmpConnection(cfg)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to setup SNMP connection")
 	}
