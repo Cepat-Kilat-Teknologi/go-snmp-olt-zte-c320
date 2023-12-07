@@ -19,6 +19,8 @@ type OnuRedisRepositoryInterface interface {
 	GetONUInfoList(ctx context.Context, key string) ([]model.ONUInfoPerBoard, error)
 	GetOnlyOnuIDCtx(ctx context.Context, key string) ([]model.OnuOnlyID, error)
 	SaveOnlyOnuIDCtx(ctx context.Context, key string, seconds int, onuId []model.OnuOnlyID) error
+	GetOnuSerialNumberCtx(ctx context.Context, key string) ([]model.OnuSerialNumber, error)
+	SetOnuSerialNumberCtx(ctx context.Context, key string, seconds int, onuSerialNumber []model.OnuSerialNumber) error
 }
 
 // Auth redis repository
@@ -137,6 +139,41 @@ func (r *onuRedisRepo) SaveOnlyOnuIDCtx(ctx context.Context, key string, seconds
 	if err := r.redisClient.Set(ctx, key, onuBytes, time.Second*time.Duration(seconds)).Err(); err != nil {
 		log.Error().Err(err).Msg("Failed to set onu id to redis")
 		return errors.Wrap(err, "onuRedisRepo.SaveOnlyOnuIDCtx.redisClient.Set")
+	}
+
+	return nil
+}
+
+// GetOnuSerialNumberCtx is a method to get onu serial number from redis
+func (r *onuRedisRepo) GetOnuSerialNumberCtx(ctx context.Context, key string) ([]model.OnuSerialNumber, error) {
+	onuBytes, err := r.redisClient.Get(ctx, key).Bytes()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get onu serial number from redis")
+		return nil, errors.Wrap(err, "onuRedisRepo.GetOnuSerialNumberCtx.redisClient.Get")
+	}
+
+	var onuSerialNumber []model.OnuSerialNumber
+	if err := json.Unmarshal(onuBytes, &onuSerialNumber); err != nil {
+		log.Error().Err(err).Msg("Failed to unmarshal onu serial number")
+		return nil, errors.Wrap(err, "onuRedisRepo.GetOnuSerialNumberCtx.json.Unmarshal")
+	}
+
+	return onuSerialNumber, nil
+}
+
+// SetOnuSerialNumberCtx is a method to set onu serial number to redis
+func (r *onuRedisRepo) SetOnuSerialNumberCtx(
+	ctx context.Context, key string, seconds int, onuSerialNumber []model.OnuSerialNumber,
+) error {
+	onuBytes, err := json.Marshal(onuSerialNumber)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to marshal onu serial number")
+		return errors.Wrap(err, "onuRedisRepo.SetOnuSerialNumberCtx.json.Marshal")
+	}
+
+	if err := r.redisClient.Set(ctx, key, onuBytes, time.Second*time.Duration(seconds)).Err(); err != nil {
+		log.Error().Err(err).Msg("Failed to set onu serial number to redis")
+		return errors.Wrap(err, "onuRedisRepo.SetOnuSerialNumberCtx.redisClient.Set")
 	}
 
 	return nil
