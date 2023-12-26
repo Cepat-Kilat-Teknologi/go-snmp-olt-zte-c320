@@ -48,8 +48,8 @@ docker run -d -p 8081:8081 --name go-snmp-olt-zte-c320 \
 --network local-dev -e REDIS_HOST=redis-container \
 -e REDIS_PORT=6379 -e REDIS_DB=0 \
 -e REDIS_MIN_IDLE_CONNECTIONS=200 -e REDIS_POOL_SIZE=12000 \
--e REDIS_POOL_TIMEOUT=240 -e SNMP_HOST=192.168.213.174 \
--e SNMP_PORT=161 -e SNMP_COMMUNITY=homenetro \
+-e REDIS_POOL_TIMEOUT=240 -e SNMP_HOST=x.x.x.x \
+-e SNMP_PORT=161 -e SNMP_COMMUNITY=xxxx \
 sumitroajiprabowo/go-snmp-olt-zte-c320:latest
 ```
 
