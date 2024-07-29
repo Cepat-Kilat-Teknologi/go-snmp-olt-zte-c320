@@ -39,7 +39,7 @@ func SetupSnmpConnection(config *config.Config) (*gosnmp.GoSNMP, error) {
 		Version:   gosnmp.Version2c,
 		Timeout:   time.Duration(30) * time.Second,
 		//Retries:   3
-		//Logger: logSnmp,
+		Logger: logSnmp,
 	}
 
 	err := target.Connect()
