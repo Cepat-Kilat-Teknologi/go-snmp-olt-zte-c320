@@ -11,7 +11,7 @@ tasks:
   dev:
     desc: Start the local environment
     cmds:
-      - docker-compose -f docker-compose.local.yaml up -d && air -c .air.toml
+      - docker compose -f docker-compose.local.yaml up -d && air -c .air.toml
 
   go-install:
     cmds:
@@ -77,17 +77,17 @@ tasks:
   up:
     desc: Start the docker containers in the background
     cmds:
-      - docker-compose up -d
+      - docker compose up -d
 
   up-rebuild:
     desc: Rebuild the docker containers
     cmds:
-      - docker-compose up -d --build
+      - docker compose up -d --build
 
   down:
     desc: Stop and remove the docker containers
     cmds:
-      - docker-compose down
+      - docker compose down
 
   restart:
     desc: Restart the docker containers
