@@ -151,10 +151,16 @@ curl -sS localhost:8081/api/v1/board/2/pon/7 | jq
     "description": "Bale Agung",
     "onu_type": "F670LV7.1",
     "serial_number": "ZTEGCEEA1119",
-    "rx_power": "-21.08",
-    "tx_power": "2.5340000000000007",
+    "rx_power": "-20.71",
+    "tx_power": "2.57",
     "status": "Online",
-    "ip_address": "10.90.1.214"
+    "ip_address": "10.90.1.214",
+    "last_online": "2024-08-11 10:09:37",
+    "last_offline": "2024-08-11 10:08:35",
+    "uptime": "5 days 13 hours 10 minutes 50 seconds",
+    "last_down_time_duration": "0 days 0 hours 1 minutes 2 seconds",
+    "offline_reason": "PowerOff",
+    "gpon_optical_distance": "6701"
   }
 }
 ```
