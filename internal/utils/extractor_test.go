@@ -141,3 +141,146 @@ func TestExtractAndGetStatus(t *testing.T) {
 		})
 	}
 }
+
+// TestExtractLastOfflineReason tests the ExtractLastOfflineReason function.
+func TestExtractLastOfflineReason(t *testing.T) {
+	tests := []struct {
+		name     string
+		oidValue interface{}
+		expected string
+	}{
+		{
+			name:     "Valid value 1",
+			oidValue: 1,
+			expected: "Unknown",
+		},
+		{
+			name:     "Valid value 2",
+			oidValue: 2,
+			expected: "LOS",
+		},
+		{
+			name:     "Valid value 3",
+			oidValue: 3,
+			expected: "LOSi",
+		},
+		{
+			name:     "Valid value 4",
+			oidValue: 4,
+			expected: "LOFi",
+		},
+		{
+			name:     "Valid value 5",
+			oidValue: 5,
+			expected: "sfi",
+		},
+		{
+			name:     "Valid value 6",
+			oidValue: 6,
+			expected: "loai",
+		},
+		{
+			name:     "Valid value 7",
+			oidValue: 7,
+			expected: "loami",
+		},
+		{
+			name:     "Valid value 8",
+			oidValue: 8,
+			expected: "AuthFail",
+		},
+		{
+			name:     "Valid value 9",
+			oidValue: 9,
+			expected: "PowerOff",
+		},
+		{
+			name:     "Valid value 10",
+			oidValue: 10,
+			expected: "deactiveSucc",
+		},
+		{
+			name:     "Valid value 11",
+			oidValue: 11,
+			expected: "deactiveFail",
+		},
+		{
+			name:     "Valid value 12",
+			oidValue: 12,
+			expected: "Reboot",
+		},
+		{
+			name:     "Valid value 13",
+			oidValue: 13,
+			expected: "Shutdown",
+		},
+		{
+			name:     "Invalid value",
+			oidValue: 14,
+			expected: "Unknown",
+		},
+		{
+			name:     "Non-integer value",
+			oidValue: "string",
+			expected: "Unknown",
+		},
+		{
+			name:     "Nil value",
+			oidValue: nil,
+			expected: "Unknown",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExtractLastOfflineReason(tt.oidValue)
+			if result != tt.expected {
+				t.Errorf("ExtractLastOfflineReason() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestExtractGponOpticalDistance tests the ExtractGponOpticalDistance function.
+func TestExtractGponOpticalDistance(t *testing.T) {
+	tests := []struct {
+		name     string
+		oidValue interface{}
+		expected string
+	}{
+		{
+			name:     "Valid integer value",
+			oidValue: 12345,
+			expected: "12345",
+		},
+		{
+			name:     "Another valid integer value",
+			oidValue: 0,
+			expected: "0",
+		},
+		{
+			name:     "Negative integer value",
+			oidValue: -6789,
+			expected: "-6789",
+		},
+		{
+			name:     "Non-integer value",
+			oidValue: "string",
+			expected: "Unknown",
+		},
+		{
+			name:     "Nil value",
+			oidValue: nil,
+			expected: "Unknown",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExtractGponOpticalDistance(tt.oidValue)
+			if result != tt.expected {
+				t.Errorf("ExtractGponOpticalDistance() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}
