@@ -154,7 +154,7 @@ func (o *OnuHandler) GetByBoardIDPonIDAndOnuID(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// Convert result to JSON format according to WebResponse structure
+	// Convert a result to JSON format according to WebResponse structure
 	response := utils.WebResponse{
 		Code:   http.StatusOK, // 200
 		Status: "OK",          // "OK"

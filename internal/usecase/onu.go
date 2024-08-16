@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/gosnmp/gosnmp"
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/config"
 	"github.com/megadata-dev/go-snmp-olt-zte-c320/internal/model"
@@ -11,6 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"sort"
 	"strconv"
+	"time"
 )
 
 type OnuUseCaseInterface interface {
@@ -69,99 +71,131 @@ func (u *onuUsecase) getBoard1Config(ponID int) *model.OltConfig {
 	switch ponID {
 	case 1:
 		return &model.OltConfig{
-			BaseOID:            u.cfg.OltCfg.BaseOID1,
-			OnuIDNameOID:       u.cfg.Board1Pon1.OnuIDNameOID,
-			OnuTypeOID:         u.cfg.Board1Pon1.OnuTypeOID,
-			OnuSerialNumberOID: u.cfg.Board1Pon1.OnuSerialNumberOID,
-			OnuRxPowerOID:      u.cfg.Board1Pon1.OnuRxPowerOID,
-			OnuTxPowerOID:      u.cfg.Board1Pon1.OnuTxPowerOID,
-			OnuStatusOID:       u.cfg.Board1Pon1.OnuStatusOID,
-			OnuIPAddressOID:    u.cfg.Board1Pon1.OnuIPAddressOID,
-			OnuDescriptionOID:  u.cfg.Board1Pon1.OnuDescriptionOID,
+			BaseOID:                   u.cfg.OltCfg.BaseOID1,
+			OnuIDNameOID:              u.cfg.Board1Pon1.OnuIDNameOID,
+			OnuTypeOID:                u.cfg.Board1Pon1.OnuTypeOID,
+			OnuSerialNumberOID:        u.cfg.Board1Pon1.OnuSerialNumberOID,
+			OnuRxPowerOID:             u.cfg.Board1Pon1.OnuRxPowerOID,
+			OnuTxPowerOID:             u.cfg.Board1Pon1.OnuTxPowerOID,
+			OnuStatusOID:              u.cfg.Board1Pon1.OnuStatusOID,
+			OnuIPAddressOID:           u.cfg.Board1Pon1.OnuIPAddressOID,
+			OnuDescriptionOID:         u.cfg.Board1Pon1.OnuDescriptionOID,
+			OnuLastOnlineOID:          u.cfg.Board1Pon1.OnuLastOnlineOID,
+			OnuLastOfflineOID:         u.cfg.Board1Pon1.OnuLastOfflineOID,
+			OnuLastOfflineReasonOID:   u.cfg.Board1Pon1.OnuLastOfflineReasonOID,
+			OnuGponOpticalDistanceOID: u.cfg.Board1Pon1.OnuGponOpticalDistanceOID,
 		}
 	case 2:
 		return &model.OltConfig{
-			BaseOID:            u.cfg.OltCfg.BaseOID1,
-			OnuIDNameOID:       u.cfg.Board1Pon2.OnuIDNameOID,
-			OnuTypeOID:         u.cfg.Board1Pon2.OnuTypeOID,
-			OnuSerialNumberOID: u.cfg.Board1Pon2.OnuSerialNumberOID,
-			OnuRxPowerOID:      u.cfg.Board1Pon2.OnuRxPowerOID,
-			OnuTxPowerOID:      u.cfg.Board1Pon2.OnuTxPowerOID,
-			OnuStatusOID:       u.cfg.Board1Pon2.OnuStatusOID,
-			OnuIPAddressOID:    u.cfg.Board1Pon2.OnuIPAddressOID,
-			OnuDescriptionOID:  u.cfg.Board1Pon2.OnuDescriptionOID,
+			BaseOID:                   u.cfg.OltCfg.BaseOID1,
+			OnuIDNameOID:              u.cfg.Board1Pon2.OnuIDNameOID,
+			OnuTypeOID:                u.cfg.Board1Pon2.OnuTypeOID,
+			OnuSerialNumberOID:        u.cfg.Board1Pon2.OnuSerialNumberOID,
+			OnuRxPowerOID:             u.cfg.Board1Pon2.OnuRxPowerOID,
+			OnuTxPowerOID:             u.cfg.Board1Pon2.OnuTxPowerOID,
+			OnuStatusOID:              u.cfg.Board1Pon2.OnuStatusOID,
+			OnuIPAddressOID:           u.cfg.Board1Pon2.OnuIPAddressOID,
+			OnuDescriptionOID:         u.cfg.Board1Pon2.OnuDescriptionOID,
+			OnuLastOnlineOID:          u.cfg.Board1Pon2.OnuLastOnlineOID,
+			OnuLastOfflineOID:         u.cfg.Board1Pon2.OnuLastOfflineOID,
+			OnuLastOfflineReasonOID:   u.cfg.Board1Pon2.OnuLastOfflineReasonOID,
+			OnuGponOpticalDistanceOID: u.cfg.Board1Pon2.OnuGponOpticalDistanceOID,
 		}
 	case 3: // PON 3
 		return &model.OltConfig{
-			BaseOID:            u.cfg.OltCfg.BaseOID1,
-			OnuIDNameOID:       u.cfg.Board1Pon3.OnuIDNameOID,
-			OnuTypeOID:         u.cfg.Board1Pon3.OnuTypeOID,
-			OnuSerialNumberOID: u.cfg.Board1Pon3.OnuSerialNumberOID,
-			OnuRxPowerOID:      u.cfg.Board1Pon3.OnuRxPowerOID,
-			OnuTxPowerOID:      u.cfg.Board1Pon3.OnuTxPowerOID,
-			OnuStatusOID:       u.cfg.Board1Pon3.OnuStatusOID,
-			OnuIPAddressOID:    u.cfg.Board1Pon3.OnuIPAddressOID,
-			OnuDescriptionOID:  u.cfg.Board1Pon3.OnuDescriptionOID,
+			BaseOID:                   u.cfg.OltCfg.BaseOID1,
+			OnuIDNameOID:              u.cfg.Board1Pon3.OnuIDNameOID,
+			OnuTypeOID:                u.cfg.Board1Pon3.OnuTypeOID,
+			OnuSerialNumberOID:        u.cfg.Board1Pon3.OnuSerialNumberOID,
+			OnuRxPowerOID:             u.cfg.Board1Pon3.OnuRxPowerOID,
+			OnuTxPowerOID:             u.cfg.Board1Pon3.OnuTxPowerOID,
+			OnuStatusOID:              u.cfg.Board1Pon3.OnuStatusOID,
+			OnuIPAddressOID:           u.cfg.Board1Pon3.OnuIPAddressOID,
+			OnuDescriptionOID:         u.cfg.Board1Pon3.OnuDescriptionOID,
+			OnuLastOnlineOID:          u.cfg.Board1Pon3.OnuLastOnlineOID,
+			OnuLastOfflineOID:         u.cfg.Board1Pon3.OnuLastOfflineOID,
+			OnuLastOfflineReasonOID:   u.cfg.Board1Pon3.OnuLastOfflineReasonOID,
+			OnuGponOpticalDistanceOID: u.cfg.Board1Pon3.OnuGponOpticalDistanceOID,
 		}
 	case 4: // PON 4
 		return &model.OltConfig{
-			BaseOID:            u.cfg.OltCfg.BaseOID1,
-			OnuIDNameOID:       u.cfg.Board1Pon4.OnuIDNameOID,
-			OnuTypeOID:         u.cfg.Board1Pon4.OnuTypeOID,
-			OnuSerialNumberOID: u.cfg.Board1Pon4.OnuSerialNumberOID,
-			OnuRxPowerOID:      u.cfg.Board1Pon4.OnuRxPowerOID,
-			OnuTxPowerOID:      u.cfg.Board1Pon4.OnuTxPowerOID,
-			OnuStatusOID:       u.cfg.Board1Pon4.OnuStatusOID,
-			OnuIPAddressOID:    u.cfg.Board1Pon4.OnuIPAddressOID,
-			OnuDescriptionOID:  u.cfg.Board1Pon4.OnuDescriptionOID,
+			BaseOID:                   u.cfg.OltCfg.BaseOID1,
+			OnuIDNameOID:              u.cfg.Board1Pon4.OnuIDNameOID,
+			OnuTypeOID:                u.cfg.Board1Pon4.OnuTypeOID,
+			OnuSerialNumberOID:        u.cfg.Board1Pon4.OnuSerialNumberOID,
+			OnuRxPowerOID:             u.cfg.Board1Pon4.OnuRxPowerOID,
+			OnuTxPowerOID:             u.cfg.Board1Pon4.OnuTxPowerOID,
+			OnuStatusOID:              u.cfg.Board1Pon4.OnuStatusOID,
+			OnuIPAddressOID:           u.cfg.Board1Pon4.OnuIPAddressOID,
+			OnuDescriptionOID:         u.cfg.Board1Pon4.OnuDescriptionOID,
+			OnuLastOnlineOID:          u.cfg.Board1Pon4.OnuLastOnlineOID,
+			OnuLastOfflineOID:         u.cfg.Board1Pon4.OnuLastOfflineOID,
+			OnuLastOfflineReasonOID:   u.cfg.Board1Pon4.OnuLastOfflineReasonOID,
+			OnuGponOpticalDistanceOID: u.cfg.Board1Pon4.OnuGponOpticalDistanceOID,
 		}
 	case 5: // PON 5
 		return &model.OltConfig{
-			BaseOID:            u.cfg.OltCfg.BaseOID1,
-			OnuIDNameOID:       u.cfg.Board1Pon5.OnuIDNameOID,
-			OnuTypeOID:         u.cfg.Board1Pon5.OnuTypeOID,
-			OnuSerialNumberOID: u.cfg.Board1Pon5.OnuSerialNumberOID,
-			OnuRxPowerOID:      u.cfg.Board1Pon5.OnuRxPowerOID,
-			OnuTxPowerOID:      u.cfg.Board1Pon5.OnuTxPowerOID,
-			OnuStatusOID:       u.cfg.Board1Pon5.OnuStatusOID,
-			OnuIPAddressOID:    u.cfg.Board1Pon5.OnuIPAddressOID,
-			OnuDescriptionOID:  u.cfg.Board1Pon5.OnuDescriptionOID,
+			BaseOID:                   u.cfg.OltCfg.BaseOID1,
+			OnuIDNameOID:              u.cfg.Board1Pon5.OnuIDNameOID,
+			OnuTypeOID:                u.cfg.Board1Pon5.OnuTypeOID,
+			OnuSerialNumberOID:        u.cfg.Board1Pon5.OnuSerialNumberOID,
+			OnuRxPowerOID:             u.cfg.Board1Pon5.OnuRxPowerOID,
+			OnuTxPowerOID:             u.cfg.Board1Pon5.OnuTxPowerOID,
+			OnuStatusOID:              u.cfg.Board1Pon5.OnuStatusOID,
+			OnuIPAddressOID:           u.cfg.Board1Pon5.OnuIPAddressOID,
+			OnuDescriptionOID:         u.cfg.Board1Pon5.OnuDescriptionOID,
+			OnuLastOnlineOID:          u.cfg.Board1Pon5.OnuLastOnlineOID,
+			OnuLastOfflineOID:         u.cfg.Board1Pon5.OnuLastOfflineOID,
+			OnuLastOfflineReasonOID:   u.cfg.Board1Pon5.OnuLastOfflineReasonOID,
+			OnuGponOpticalDistanceOID: u.cfg.Board1Pon5.OnuGponOpticalDistanceOID,
 		}
 	case 6: // PON 6
 		return &model.OltConfig{
-			BaseOID:            u.cfg.OltCfg.BaseOID1,
-			OnuIDNameOID:       u.cfg.Board1Pon6.OnuIDNameOID,
-			OnuTypeOID:         u.cfg.Board1Pon6.OnuTypeOID,
-			OnuSerialNumberOID: u.cfg.Board1Pon6.OnuSerialNumberOID,
-			OnuRxPowerOID:      u.cfg.Board1Pon6.OnuRxPowerOID,
-			OnuTxPowerOID:      u.cfg.Board1Pon6.OnuTxPowerOID,
-			OnuStatusOID:       u.cfg.Board1Pon6.OnuStatusOID,
-			OnuIPAddressOID:    u.cfg.Board1Pon6.OnuIPAddressOID,
-			OnuDescriptionOID:  u.cfg.Board1Pon6.OnuDescriptionOID,
+			BaseOID:                   u.cfg.OltCfg.BaseOID1,
+			OnuIDNameOID:              u.cfg.Board1Pon6.OnuIDNameOID,
+			OnuTypeOID:                u.cfg.Board1Pon6.OnuTypeOID,
+			OnuSerialNumberOID:        u.cfg.Board1Pon6.OnuSerialNumberOID,
+			OnuRxPowerOID:             u.cfg.Board1Pon6.OnuRxPowerOID,
+			OnuTxPowerOID:             u.cfg.Board1Pon6.OnuTxPowerOID,
+			OnuStatusOID:              u.cfg.Board1Pon6.OnuStatusOID,
+			OnuIPAddressOID:           u.cfg.Board1Pon6.OnuIPAddressOID,
+			OnuDescriptionOID:         u.cfg.Board1Pon6.OnuDescriptionOID,
+			OnuLastOnlineOID:          u.cfg.Board1Pon6.OnuLastOnlineOID,
+			OnuLastOfflineOID:         u.cfg.Board1Pon6.OnuLastOfflineOID,
+			OnuLastOfflineReasonOID:   u.cfg.Board1Pon6.OnuLastOfflineReasonOID,
+			OnuGponOpticalDistanceOID: u.cfg.Board1Pon6.OnuGponOpticalDistanceOID,
 		}
 	case 7: // PON 7
 		return &model.OltConfig{
-			BaseOID:            u.cfg.OltCfg.BaseOID1,
-			OnuIDNameOID:       u.cfg.Board1Pon7.OnuIDNameOID,
-			OnuTypeOID:         u.cfg.Board1Pon7.OnuTypeOID,
-			OnuSerialNumberOID: u.cfg.Board1Pon7.OnuSerialNumberOID,
-			OnuRxPowerOID:      u.cfg.Board1Pon7.OnuRxPowerOID,
-			OnuTxPowerOID:      u.cfg.Board1Pon7.OnuTxPowerOID,
-			OnuStatusOID:       u.cfg.Board1Pon7.OnuStatusOID,
-			OnuIPAddressOID:    u.cfg.Board1Pon7.OnuIPAddressOID,
-			OnuDescriptionOID:  u.cfg.Board1Pon7.OnuDescriptionOID,
+			BaseOID:                   u.cfg.OltCfg.BaseOID1,
+			OnuIDNameOID:              u.cfg.Board1Pon7.OnuIDNameOID,
+			OnuTypeOID:                u.cfg.Board1Pon7.OnuTypeOID,
+			OnuSerialNumberOID:        u.cfg.Board1Pon7.OnuSerialNumberOID,
+			OnuRxPowerOID:             u.cfg.Board1Pon7.OnuRxPowerOID,
+			OnuTxPowerOID:             u.cfg.Board1Pon7.OnuTxPowerOID,
+			OnuStatusOID:              u.cfg.Board1Pon7.OnuStatusOID,
+			OnuIPAddressOID:           u.cfg.Board1Pon7.OnuIPAddressOID,
+			OnuDescriptionOID:         u.cfg.Board1Pon7.OnuDescriptionOID,
+			OnuLastOnlineOID:          u.cfg.Board1Pon7.OnuLastOnlineOID,
+			OnuLastOfflineOID:         u.cfg.Board1Pon7.OnuLastOfflineOID,
+			OnuLastOfflineReasonOID:   u.cfg.Board1Pon7.OnuLastOfflineReasonOID,
+			OnuGponOpticalDistanceOID: u.cfg.Board1Pon7.OnuGponOpticalDistanceOID,
 		}
 	case 8: // PON 8
 		return &model.OltConfig{
-			BaseOID:            u.cfg.OltCfg.BaseOID1,
-			OnuIDNameOID:       u.cfg.Board1Pon8.OnuIDNameOID,
-			OnuTypeOID:         u.cfg.Board1Pon8.OnuTypeOID,
-			OnuSerialNumberOID: u.cfg.Board1Pon8.OnuSerialNumberOID,
-			OnuRxPowerOID:      u.cfg.Board1Pon8.OnuRxPowerOID,
-			OnuTxPowerOID:      u.cfg.Board1Pon8.OnuTxPowerOID,
-			OnuStatusOID:       u.cfg.Board1Pon8.OnuStatusOID,
-			OnuIPAddressOID:    u.cfg.Board1Pon8.OnuIPAddressOID,
-			OnuDescriptionOID:  u.cfg.Board1Pon8.OnuDescriptionOID,
+			BaseOID:                   u.cfg.OltCfg.BaseOID1,
+			OnuIDNameOID:              u.cfg.Board1Pon8.OnuIDNameOID,
+			OnuTypeOID:                u.cfg.Board1Pon8.OnuTypeOID,
+			OnuSerialNumberOID:        u.cfg.Board1Pon8.OnuSerialNumberOID,
+			OnuRxPowerOID:             u.cfg.Board1Pon8.OnuRxPowerOID,
+			OnuTxPowerOID:             u.cfg.Board1Pon8.OnuTxPowerOID,
+			OnuStatusOID:              u.cfg.Board1Pon8.OnuStatusOID,
+			OnuIPAddressOID:           u.cfg.Board1Pon8.OnuIPAddressOID,
+			OnuDescriptionOID:         u.cfg.Board1Pon8.OnuDescriptionOID,
+			OnuLastOnlineOID:          u.cfg.Board1Pon8.OnuLastOnlineOID,
+			OnuLastOfflineOID:         u.cfg.Board1Pon8.OnuLastOfflineOID,
+			OnuLastOfflineReasonOID:   u.cfg.Board1Pon8.OnuLastOfflineReasonOID,
+			OnuGponOpticalDistanceOID: u.cfg.Board1Pon8.OnuGponOpticalDistanceOID,
 		}
 	default:
 		log.Error().Msg("Invalid PON ID") // Log error message
@@ -175,99 +209,131 @@ func (u *onuUsecase) getBoard2Config(ponID int) *model.OltConfig {
 	switch ponID {
 	case 1: // PON 1
 		return &model.OltConfig{
-			BaseOID:            u.cfg.OltCfg.BaseOID1,
-			OnuIDNameOID:       u.cfg.Board2Pon1.OnuIDNameOID,
-			OnuTypeOID:         u.cfg.Board2Pon1.OnuTypeOID,
-			OnuSerialNumberOID: u.cfg.Board2Pon1.OnuSerialNumberOID,
-			OnuRxPowerOID:      u.cfg.Board2Pon1.OnuRxPowerOID,
-			OnuTxPowerOID:      u.cfg.Board2Pon1.OnuTxPowerOID,
-			OnuStatusOID:       u.cfg.Board2Pon1.OnuStatusOID,
-			OnuIPAddressOID:    u.cfg.Board2Pon1.OnuIPAddressOID,
-			OnuDescriptionOID:  u.cfg.Board2Pon1.OnuDescriptionOID,
+			BaseOID:                   u.cfg.OltCfg.BaseOID1,
+			OnuIDNameOID:              u.cfg.Board2Pon1.OnuIDNameOID,
+			OnuTypeOID:                u.cfg.Board2Pon1.OnuTypeOID,
+			OnuSerialNumberOID:        u.cfg.Board2Pon1.OnuSerialNumberOID,
+			OnuRxPowerOID:             u.cfg.Board2Pon1.OnuRxPowerOID,
+			OnuTxPowerOID:             u.cfg.Board2Pon1.OnuTxPowerOID,
+			OnuStatusOID:              u.cfg.Board2Pon1.OnuStatusOID,
+			OnuIPAddressOID:           u.cfg.Board2Pon1.OnuIPAddressOID,
+			OnuDescriptionOID:         u.cfg.Board2Pon1.OnuDescriptionOID,
+			OnuLastOnlineOID:          u.cfg.Board2Pon1.OnuLastOnlineOID,
+			OnuLastOfflineOID:         u.cfg.Board2Pon1.OnuLastOfflineOID,
+			OnuLastOfflineReasonOID:   u.cfg.Board2Pon1.OnuLastOfflineReasonOID,
+			OnuGponOpticalDistanceOID: u.cfg.Board2Pon1.OnuGponOpticalDistanceOID,
 		}
 	case 2: // PON 2
 		return &model.OltConfig{
-			BaseOID:            u.cfg.OltCfg.BaseOID1,
-			OnuIDNameOID:       u.cfg.Board2Pon2.OnuIDNameOID,
-			OnuTypeOID:         u.cfg.Board2Pon2.OnuTypeOID,
-			OnuSerialNumberOID: u.cfg.Board2Pon2.OnuSerialNumberOID,
-			OnuRxPowerOID:      u.cfg.Board2Pon2.OnuRxPowerOID,
-			OnuTxPowerOID:      u.cfg.Board2Pon2.OnuTxPowerOID,
-			OnuStatusOID:       u.cfg.Board2Pon2.OnuStatusOID,
-			OnuIPAddressOID:    u.cfg.Board2Pon2.OnuIPAddressOID,
-			OnuDescriptionOID:  u.cfg.Board2Pon2.OnuDescriptionOID,
+			BaseOID:                   u.cfg.OltCfg.BaseOID1,
+			OnuIDNameOID:              u.cfg.Board2Pon2.OnuIDNameOID,
+			OnuTypeOID:                u.cfg.Board2Pon2.OnuTypeOID,
+			OnuSerialNumberOID:        u.cfg.Board2Pon2.OnuSerialNumberOID,
+			OnuRxPowerOID:             u.cfg.Board2Pon2.OnuRxPowerOID,
+			OnuTxPowerOID:             u.cfg.Board2Pon2.OnuTxPowerOID,
+			OnuStatusOID:              u.cfg.Board2Pon2.OnuStatusOID,
+			OnuIPAddressOID:           u.cfg.Board2Pon2.OnuIPAddressOID,
+			OnuDescriptionOID:         u.cfg.Board2Pon2.OnuDescriptionOID,
+			OnuLastOnlineOID:          u.cfg.Board2Pon2.OnuLastOnlineOID,
+			OnuLastOfflineOID:         u.cfg.Board2Pon2.OnuLastOfflineOID,
+			OnuLastOfflineReasonOID:   u.cfg.Board2Pon2.OnuLastOfflineReasonOID,
+			OnuGponOpticalDistanceOID: u.cfg.Board2Pon2.OnuGponOpticalDistanceOID,
 		}
 	case 3: // PON 3
 		return &model.OltConfig{
-			BaseOID:            u.cfg.OltCfg.BaseOID1,
-			OnuIDNameOID:       u.cfg.Board2Pon3.OnuIDNameOID,
-			OnuTypeOID:         u.cfg.Board2Pon3.OnuTypeOID,
-			OnuSerialNumberOID: u.cfg.Board2Pon3.OnuSerialNumberOID,
-			OnuRxPowerOID:      u.cfg.Board2Pon3.OnuRxPowerOID,
-			OnuTxPowerOID:      u.cfg.Board2Pon3.OnuTxPowerOID,
-			OnuStatusOID:       u.cfg.Board2Pon3.OnuStatusOID,
-			OnuIPAddressOID:    u.cfg.Board2Pon3.OnuIPAddressOID,
-			OnuDescriptionOID:  u.cfg.Board2Pon3.OnuDescriptionOID,
+			BaseOID:                   u.cfg.OltCfg.BaseOID1,
+			OnuIDNameOID:              u.cfg.Board2Pon3.OnuIDNameOID,
+			OnuTypeOID:                u.cfg.Board2Pon3.OnuTypeOID,
+			OnuSerialNumberOID:        u.cfg.Board2Pon3.OnuSerialNumberOID,
+			OnuRxPowerOID:             u.cfg.Board2Pon3.OnuRxPowerOID,
+			OnuTxPowerOID:             u.cfg.Board2Pon3.OnuTxPowerOID,
+			OnuStatusOID:              u.cfg.Board2Pon3.OnuStatusOID,
+			OnuIPAddressOID:           u.cfg.Board2Pon3.OnuIPAddressOID,
+			OnuDescriptionOID:         u.cfg.Board2Pon3.OnuDescriptionOID,
+			OnuLastOnlineOID:          u.cfg.Board2Pon3.OnuLastOnlineOID,
+			OnuLastOfflineOID:         u.cfg.Board2Pon3.OnuLastOfflineOID,
+			OnuLastOfflineReasonOID:   u.cfg.Board2Pon3.OnuLastOfflineReasonOID,
+			OnuGponOpticalDistanceOID: u.cfg.Board2Pon3.OnuGponOpticalDistanceOID,
 		}
 	case 4: // PON 4
 		return &model.OltConfig{
-			BaseOID:            u.cfg.OltCfg.BaseOID1,
-			OnuIDNameOID:       u.cfg.Board2Pon4.OnuIDNameOID,
-			OnuTypeOID:         u.cfg.Board2Pon4.OnuTypeOID,
-			OnuSerialNumberOID: u.cfg.Board2Pon4.OnuSerialNumberOID,
-			OnuRxPowerOID:      u.cfg.Board2Pon4.OnuRxPowerOID,
-			OnuTxPowerOID:      u.cfg.Board2Pon4.OnuTxPowerOID,
-			OnuStatusOID:       u.cfg.Board2Pon4.OnuStatusOID,
-			OnuIPAddressOID:    u.cfg.Board2Pon4.OnuIPAddressOID,
-			OnuDescriptionOID:  u.cfg.Board2Pon4.OnuDescriptionOID,
+			BaseOID:                   u.cfg.OltCfg.BaseOID1,
+			OnuIDNameOID:              u.cfg.Board2Pon4.OnuIDNameOID,
+			OnuTypeOID:                u.cfg.Board2Pon4.OnuTypeOID,
+			OnuSerialNumberOID:        u.cfg.Board2Pon4.OnuSerialNumberOID,
+			OnuRxPowerOID:             u.cfg.Board2Pon4.OnuRxPowerOID,
+			OnuTxPowerOID:             u.cfg.Board2Pon4.OnuTxPowerOID,
+			OnuStatusOID:              u.cfg.Board2Pon4.OnuStatusOID,
+			OnuIPAddressOID:           u.cfg.Board2Pon4.OnuIPAddressOID,
+			OnuDescriptionOID:         u.cfg.Board2Pon4.OnuDescriptionOID,
+			OnuLastOnlineOID:          u.cfg.Board2Pon4.OnuLastOnlineOID,
+			OnuLastOfflineOID:         u.cfg.Board2Pon4.OnuLastOfflineOID,
+			OnuLastOfflineReasonOID:   u.cfg.Board2Pon4.OnuLastOfflineReasonOID,
+			OnuGponOpticalDistanceOID: u.cfg.Board2Pon4.OnuGponOpticalDistanceOID,
 		}
 	case 5: // PON 5
 		return &model.OltConfig{
-			BaseOID:            u.cfg.OltCfg.BaseOID1,
-			OnuIDNameOID:       u.cfg.Board2Pon5.OnuIDNameOID,
-			OnuTypeOID:         u.cfg.Board2Pon5.OnuTypeOID,
-			OnuSerialNumberOID: u.cfg.Board2Pon5.OnuSerialNumberOID,
-			OnuRxPowerOID:      u.cfg.Board2Pon5.OnuRxPowerOID,
-			OnuTxPowerOID:      u.cfg.Board2Pon5.OnuTxPowerOID,
-			OnuStatusOID:       u.cfg.Board2Pon5.OnuStatusOID,
-			OnuIPAddressOID:    u.cfg.Board2Pon5.OnuIPAddressOID,
-			OnuDescriptionOID:  u.cfg.Board2Pon5.OnuDescriptionOID,
+			BaseOID:                   u.cfg.OltCfg.BaseOID1,
+			OnuIDNameOID:              u.cfg.Board2Pon5.OnuIDNameOID,
+			OnuTypeOID:                u.cfg.Board2Pon5.OnuTypeOID,
+			OnuSerialNumberOID:        u.cfg.Board2Pon5.OnuSerialNumberOID,
+			OnuRxPowerOID:             u.cfg.Board2Pon5.OnuRxPowerOID,
+			OnuTxPowerOID:             u.cfg.Board2Pon5.OnuTxPowerOID,
+			OnuStatusOID:              u.cfg.Board2Pon5.OnuStatusOID,
+			OnuIPAddressOID:           u.cfg.Board2Pon5.OnuIPAddressOID,
+			OnuDescriptionOID:         u.cfg.Board2Pon5.OnuDescriptionOID,
+			OnuLastOnlineOID:          u.cfg.Board2Pon5.OnuLastOnlineOID,
+			OnuLastOfflineOID:         u.cfg.Board2Pon5.OnuLastOfflineOID,
+			OnuLastOfflineReasonOID:   u.cfg.Board2Pon5.OnuLastOfflineReasonOID,
+			OnuGponOpticalDistanceOID: u.cfg.Board2Pon5.OnuGponOpticalDistanceOID,
 		}
 	case 6: // PON 6
 		return &model.OltConfig{
-			BaseOID:            u.cfg.OltCfg.BaseOID1,
-			OnuIDNameOID:       u.cfg.Board2Pon6.OnuIDNameOID,
-			OnuTypeOID:         u.cfg.Board2Pon6.OnuTypeOID,
-			OnuSerialNumberOID: u.cfg.Board2Pon6.OnuSerialNumberOID,
-			OnuRxPowerOID:      u.cfg.Board2Pon6.OnuRxPowerOID,
-			OnuTxPowerOID:      u.cfg.Board2Pon6.OnuTxPowerOID,
-			OnuStatusOID:       u.cfg.Board2Pon6.OnuStatusOID,
-			OnuIPAddressOID:    u.cfg.Board2Pon6.OnuIPAddressOID,
-			OnuDescriptionOID:  u.cfg.Board2Pon6.OnuDescriptionOID,
+			BaseOID:                   u.cfg.OltCfg.BaseOID1,
+			OnuIDNameOID:              u.cfg.Board2Pon6.OnuIDNameOID,
+			OnuTypeOID:                u.cfg.Board2Pon6.OnuTypeOID,
+			OnuSerialNumberOID:        u.cfg.Board2Pon6.OnuSerialNumberOID,
+			OnuRxPowerOID:             u.cfg.Board2Pon6.OnuRxPowerOID,
+			OnuTxPowerOID:             u.cfg.Board2Pon6.OnuTxPowerOID,
+			OnuStatusOID:              u.cfg.Board2Pon6.OnuStatusOID,
+			OnuIPAddressOID:           u.cfg.Board2Pon6.OnuIPAddressOID,
+			OnuDescriptionOID:         u.cfg.Board2Pon6.OnuDescriptionOID,
+			OnuLastOnlineOID:          u.cfg.Board2Pon6.OnuLastOnlineOID,
+			OnuLastOfflineOID:         u.cfg.Board2Pon6.OnuLastOfflineOID,
+			OnuLastOfflineReasonOID:   u.cfg.Board2Pon6.OnuLastOfflineReasonOID,
+			OnuGponOpticalDistanceOID: u.cfg.Board2Pon6.OnuGponOpticalDistanceOID,
 		}
 	case 7: // PON 7
 		return &model.OltConfig{
-			BaseOID:            u.cfg.OltCfg.BaseOID1,
-			OnuIDNameOID:       u.cfg.Board2Pon7.OnuIDNameOID,
-			OnuTypeOID:         u.cfg.Board2Pon7.OnuTypeOID,
-			OnuSerialNumberOID: u.cfg.Board2Pon7.OnuSerialNumberOID,
-			OnuRxPowerOID:      u.cfg.Board2Pon7.OnuRxPowerOID,
-			OnuTxPowerOID:      u.cfg.Board2Pon7.OnuTxPowerOID,
-			OnuStatusOID:       u.cfg.Board2Pon7.OnuStatusOID,
-			OnuIPAddressOID:    u.cfg.Board2Pon7.OnuIPAddressOID,
-			OnuDescriptionOID:  u.cfg.Board2Pon7.OnuDescriptionOID,
+			BaseOID:                   u.cfg.OltCfg.BaseOID1,
+			OnuIDNameOID:              u.cfg.Board2Pon7.OnuIDNameOID,
+			OnuTypeOID:                u.cfg.Board2Pon7.OnuTypeOID,
+			OnuSerialNumberOID:        u.cfg.Board2Pon7.OnuSerialNumberOID,
+			OnuRxPowerOID:             u.cfg.Board2Pon7.OnuRxPowerOID,
+			OnuTxPowerOID:             u.cfg.Board2Pon7.OnuTxPowerOID,
+			OnuStatusOID:              u.cfg.Board2Pon7.OnuStatusOID,
+			OnuIPAddressOID:           u.cfg.Board2Pon7.OnuIPAddressOID,
+			OnuDescriptionOID:         u.cfg.Board2Pon7.OnuDescriptionOID,
+			OnuLastOnlineOID:          u.cfg.Board2Pon7.OnuLastOnlineOID,
+			OnuLastOfflineOID:         u.cfg.Board2Pon7.OnuLastOfflineOID,
+			OnuLastOfflineReasonOID:   u.cfg.Board2Pon7.OnuLastOfflineReasonOID,
+			OnuGponOpticalDistanceOID: u.cfg.Board2Pon7.OnuGponOpticalDistanceOID,
 		}
 	case 8: // PON 8
 		return &model.OltConfig{
-			BaseOID:            u.cfg.OltCfg.BaseOID1,
-			OnuIDNameOID:       u.cfg.Board2Pon8.OnuIDNameOID,
-			OnuTypeOID:         u.cfg.Board2Pon8.OnuTypeOID,
-			OnuSerialNumberOID: u.cfg.Board2Pon8.OnuSerialNumberOID,
-			OnuRxPowerOID:      u.cfg.Board2Pon8.OnuRxPowerOID,
-			OnuTxPowerOID:      u.cfg.Board2Pon8.OnuTxPowerOID,
-			OnuStatusOID:       u.cfg.Board2Pon8.OnuStatusOID,
-			OnuIPAddressOID:    u.cfg.Board2Pon8.OnuIPAddressOID,
-			OnuDescriptionOID:  u.cfg.Board2Pon8.OnuDescriptionOID,
+			BaseOID:                   u.cfg.OltCfg.BaseOID1,
+			OnuIDNameOID:              u.cfg.Board2Pon8.OnuIDNameOID,
+			OnuTypeOID:                u.cfg.Board2Pon8.OnuTypeOID,
+			OnuSerialNumberOID:        u.cfg.Board2Pon8.OnuSerialNumberOID,
+			OnuRxPowerOID:             u.cfg.Board2Pon8.OnuRxPowerOID,
+			OnuTxPowerOID:             u.cfg.Board2Pon8.OnuTxPowerOID,
+			OnuStatusOID:              u.cfg.Board2Pon8.OnuStatusOID,
+			OnuIPAddressOID:           u.cfg.Board2Pon8.OnuIPAddressOID,
+			OnuDescriptionOID:         u.cfg.Board2Pon8.OnuDescriptionOID,
+			OnuLastOnlineOID:          u.cfg.Board2Pon8.OnuLastOnlineOID,
+			OnuLastOfflineOID:         u.cfg.Board2Pon8.OnuLastOfflineOID,
+			OnuLastOfflineReasonOID:   u.cfg.Board2Pon8.OnuLastOfflineReasonOID,
+			OnuGponOpticalDistanceOID: u.cfg.Board2Pon8.OnuGponOpticalDistanceOID,
 		}
 	default:
 		log.Error().Msg("Invalid PON ID") // Log error message
@@ -464,6 +530,42 @@ func (u *onuUsecase) GetByBoardIDPonIDAndOnuID(boardID, ponID, onuID int) (
 		onuDescription, err := u.getDescription(oltConfig.OnuDescriptionOID, strconv.Itoa(onuInfo.ID))
 		if err == nil {
 			onuInfo.Description = onuDescription // Set ONU Description from SNMP Walk result to onuInfo variable (ONU Description)
+		}
+
+		// Get Data ONU Last Online from SNMP Walk using getLastOnline method
+		onuLastOnline, err := u.getLastOnline(oltConfig.OnuLastOnlineOID, strconv.Itoa(onuInfo.ID))
+		if err == nil {
+			onuInfo.LastOnline = onuLastOnline // Set ONU Last Online from SNMP Walk result to onuInfo variable (ONU Last Online)
+		}
+
+		// Get Data ONU Last Offline from SNMP Walk using getLastOffline method
+		onuLastOffline, err := u.getLastOffline(oltConfig.OnuLastOfflineOID, strconv.Itoa(onuInfo.ID))
+		if err == nil {
+			onuInfo.LastOffline = onuLastOffline // Set ONU Last Offline from SNMP Walk result to onuInfo variable (ONU Last Offline)
+		}
+
+		// Get Data Uptime Duration from getUptimeDuration method
+		onuUptimeDuration, err := u.getUptimeDuration(onuLastOnline)
+		if err == nil {
+			onuInfo.Uptime = onuUptimeDuration // Set ONU Uptime Duration from SNMP Walk result to onuInfo variable (ONU Uptime Duration)
+		}
+
+		// Get Data Last Down Duration from getLastDownDuration method
+		onuLastDownDuration, err := u.getLastDownDuration(onuLastOffline, onuLastOnline)
+		if err == nil {
+			onuInfo.LastDownTimeDuration = onuLastDownDuration // Set ONU Last Down Duration from SNMP Walk result to onuInfo variable (ONU Last Down Duration)
+		}
+
+		// Get Data ONU Last Offline Reason from SNMP Walk using getLastOfflineReason method
+		onuLastOfflineReason, err := u.getLastOfflineReason(oltConfig.OnuLastOfflineReasonOID, strconv.Itoa(onuInfo.ID))
+		if err == nil {
+			onuInfo.LastOfflineReason = onuLastOfflineReason // Set ONU Last Offline Reason from SNMP Walk result to onuInfo variable (ONU Last Offline Reason)
+		}
+
+		// Get Data ONU GPON Optical Distance from SNMP Walk using getGponOpticalDistance method
+		onuGponOpticalDistance, err := u.getOnuGponOpticalDistance(oltConfig.OnuGponOpticalDistanceOID, strconv.Itoa(onuInfo.ID))
+		if err == nil {
+			onuInfo.GponOpticalDistance = onuGponOpticalDistance // Set ONU GPON Optical Distance from SNMP Walk result to onuInfo variable (ONU GPON Optical Distance)
 		}
 
 		onuInformationList = onuInfo // Append onuInfo variable to onuInformationList slice
@@ -1002,4 +1104,175 @@ func (u *onuUsecase) getDescription(OnuDescriptionOID, onuID string) (string, er
 	}
 
 	return onuDescription, nil // Return ONU Description
+}
+
+func (u *onuUsecase) getLastOnline(OnuLastOnlineOID, onuID string) (string, error) {
+
+	var onuLastOnline string // Variable to store ONU Last Online
+
+	baseOID := u.cfg.OltCfg.BaseOID1 // Base OID variable get from config
+
+	// Perform SNMP Get to get ONU Last Online using snmpRepository Get method with timeout context parameter
+	oids := []string{baseOID + OnuLastOnlineOID + "." + onuID}
+	result, err := u.snmpRepository.Get(oids)
+	if err != nil {
+		log.Error().Msg("Failed to perform SNMP Get for last online: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Get")                           // Return error
+	}
+
+	// Check if the result contains the expected OID
+	if len(result.Variables) > 0 {
+		value := result.Variables[0].Value.([]byte) // Assuming the value is returned as a byte array (Octet String)
+
+		// Convert the Octet String to a DateTime
+		onuLastOnline, err = utils.ConvertByteArrayToDateTime(value)
+
+		if err != nil {
+			log.Error().Msg("Failed to convert byte array to DateTime: " + err.Error())
+			return "", err
+		}
+
+	} else {
+		log.Error().Msg("Failed to get ONU Last Online: No variables in the response")
+		return "", errors.New("no variables in the response")
+	}
+
+	return onuLastOnline, nil // Return ONU Last Online as a string
+}
+
+func (u *onuUsecase) getLastOffline(OnuLastOfflineOID, onuID string) (string, error) {
+
+	var onuLastOffline string // Variable to store ONU Last Offline
+
+	baseOID := u.cfg.OltCfg.BaseOID1 // Base OID variable get from config
+
+	// Perform SNMP Get to get ONU Last Offline using snmpRepository Get method with timeout context parameter
+	oids := []string{baseOID + OnuLastOfflineOID + "." + onuID}
+	result, err := u.snmpRepository.Get(oids)
+	if err != nil {
+		log.Error().Msg("Failed to perform SNMP Get for last offline: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Get")                            // Return error
+	}
+
+	// Check if the result contains the expected OID
+	if len(result.Variables) > 0 {
+		value := result.Variables[0].Value.([]byte) // Assuming the value is returned as a byte array (Octet String)
+
+		// Convert the Octet String to a DateTime
+		onuLastOffline, err = utils.ConvertByteArrayToDateTime(value)
+
+		if err != nil {
+			log.Error().Msg("Failed to convert byte array to DateTime: " + err.Error())
+			return "", err
+		}
+
+	} else {
+		log.Error().Msg("Failed to get ONU Last Offline: No variables in the response")
+		return "", errors.New("no variables in the response")
+	}
+
+	return onuLastOffline, nil // Return ONU Last Offline as a string
+}
+
+func (u *onuUsecase) getLastOfflineReason(OnuLastOfflineReasonOID, onuID string) (string, error) {
+
+	var onuLastOfflineReason string // Variable to store ONU Last Offline Reason
+
+	baseOID := u.cfg.OltCfg.BaseOID1 // Base OID variable get from config
+
+	// Perform SNMP Get to get ONU Last Offline Reason using snmpRepository Get method with timeout context parameter
+	oids := []string{baseOID + OnuLastOfflineReasonOID + "." + onuID}
+	result, err := u.snmpRepository.Get(oids)
+	if err != nil {
+		log.Error().Msg("Failed to perform SNMP Get for last offline reason: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Get")                                   // Return error
+	}
+
+	// Check if the result contains the expected OID
+	if len(result.Variables) > 0 {
+		onuLastOfflineReason = utils.ExtractLastOfflineReason(result.Variables[0].Value) // Extract ONU Last Offline Reason from the result
+	} else {
+		log.Error().Msg("Failed to get ONU Last Offline Reason: No variables in the response")
+		return "", errors.New("no variables in the response")
+	}
+
+	return onuLastOfflineReason, nil // Return ONU Last Offline Reason
+}
+
+func (u *onuUsecase) getOnuGponOpticalDistance(OnuGponOpticalDistanceOID, onuID string) (string, error) {
+
+	var onuGponOpticalDistance string // Variable to store ONU GPON Optical Distance
+
+	baseOID := u.cfg.OltCfg.BaseOID1 // Base OID variable get from config
+
+	// Perform SNMP Get to get ONU GPON Optical Distance using snmpRepository Get method with timeout context parameter
+	oids := []string{baseOID + OnuGponOpticalDistanceOID + "." + onuID}
+	fmt.Println(oids)
+	result, err := u.snmpRepository.Get(oids)
+	if err != nil {
+		log.Error().Msg("Failed to perform SNMP Get for GPON Optical Distance: " + err.Error()) // Log error message to logger
+		return "", errors.New("failed to perform SNMP Get")                                     // Return error
+	}
+
+	// Check if the result contains the expected OID
+	if len(result.Variables) > 0 {
+		onuGponOpticalDistance = utils.ExtractGponOpticalDistance(result.Variables[0].Value) // Extract ONU GPON Optical Distance from the result
+	} else {
+		log.Error().Msg("Failed to get ONU GPON Optical Distance: No variables in the response")
+		return "", errors.New("no variables in the response")
+	}
+
+	return onuGponOpticalDistance, nil // Return ONU GPON Optical Distance
+}
+
+func (u *onuUsecase) getUptimeDuration(lastOnline string) (string, error) {
+
+	// Get current time in UTC
+	currentTime := time.Now()
+
+	// Convert last online time to UTC
+	lastOnlineTime, err := time.Parse("2006-01-02 15:04:05", lastOnline)
+	if err != nil {
+		log.Error().Msg("Failed to parse last online time: " + err.Error())
+		return "", err
+	}
+
+	fmt.Println("This is time now: ", currentTime)
+	fmt.Println("This is last online time: ", lastOnlineTime)
+	fmt.Println("This is duration: ", currentTime.Sub(lastOnlineTime))
+
+	// Calculate the duration between the last online time and the current time
+	duration := currentTime.Sub(lastOnlineTime) + time.Hour*7
+
+	// Convert the duration to a string
+	uptimeDuration := utils.ConvertDurationToString(duration)
+
+	return uptimeDuration, nil
+
+}
+
+// Last Down Duration
+func (u *onuUsecase) getLastDownDuration(lastOffline, lastOnline string) (string, error) {
+
+	// Convert last offline time to time
+	lastOfflineTime, err := time.Parse("2006-01-02 15:04:05", lastOffline)
+	if err != nil {
+		log.Error().Msg("Failed to parse last offline time: " + err.Error())
+		return "", err
+	}
+
+	// Convert last online time to time
+	lastOnlineTime, err := time.Parse("2006-01-02 15:04:05", lastOnline)
+	if err != nil {
+		log.Error().Msg("Failed to parse last online time: " + err.Error())
+		return "", err
+	}
+
+	// Calculate the duration between the last offline time and the last online time
+	duration := lastOnlineTime.Sub(lastOfflineTime)
+
+	// Convert the duration to a string
+	lastDownDuration := utils.ConvertDurationToString(duration)
+
+	return lastDownDuration, nil
 }
