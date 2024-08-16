@@ -121,3 +121,52 @@ func ExtractAndGetStatus(oidValue interface{}) string {
 		return "Unknown"
 	}
 }
+
+func ExtractLastOfflineReason(oidValue interface{}) string {
+	// Check if oidValue is not an integer
+	intValue, ok := oidValue.(int)
+	if !ok {
+		return "Unknown"
+	}
+
+	switch intValue {
+	case 1:
+		return "Unknown"
+	case 2:
+		return "LOS"
+	case 3:
+		return "LOSi"
+	case 4:
+		return "LOFi"
+	case 5:
+		return "sfi"
+	case 6:
+		return "loai"
+	case 7:
+		return "loami"
+	case 8:
+		return "AuthFail"
+	case 9:
+		return "PowerOff"
+	case 10:
+		return "deactiveSucc"
+	case 11:
+		return "deactiveFail"
+	case 12:
+		return "Reboot"
+	case 13:
+		return "Shutdown"
+	default:
+		return "Unknown"
+	}
+}
+
+func ExtractGponOpticalDistance(oidValue interface{}) string {
+	// Check if oidValue is not an integer
+	intValue, ok := oidValue.(int)
+	if !ok {
+		return "Unknown"
+	}
+
+	return strconv.Itoa(intValue)
+}
