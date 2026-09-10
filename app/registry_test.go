@@ -629,7 +629,7 @@ func TestOLTRegistry_StartPoller_DisabledByZeroInterval(t *testing.T) {
 func TestOLTRegistry_StartPoller_StopsOnContextCancel(t *testing.T) {
 	reg := testRegistry("c320")
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // already cancelled
+	cancel() // already canceled
 
 	done := make(chan struct{})
 	go func() {
@@ -840,10 +840,7 @@ func TestOLTRegistry_StartPoller_FetchSuccessReconciles(t *testing.T) {
 
 	// Wait for at least one tick to fire and reconcile.
 	deadline := time.After(3 * time.Second)
-	for {
-		if reg.Len() > 0 {
-			break
-		}
+	for reg.Len() == 0 {
 		select {
 		case <-deadline:
 			cancel()

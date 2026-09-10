@@ -216,7 +216,7 @@ func (reg *OLTRegistry) removeOLTLocked(id string, entry *OLTEntry) {
 
 // StartPoller runs a background goroutine that fetches the OLT list from
 // device-registry at the given interval and reconciles the registry. It blocks
-// until ctx is cancelled. Poll failures are logged but never wipe the registry
+// until ctx is canceled. Poll failures are logged but never wipe the registry
 // — the current OLTs keep serving.
 func (reg *OLTRegistry) StartPoller(ctx context.Context, registryURL, apiKey string, interval time.Duration) {
 	if interval <= 0 {
