@@ -17,7 +17,7 @@ func legacyOK() OLTRuntimeConfig {
 }
 
 func TestBuildOLTRegistry_Legacy(t *testing.T) {
-	olts, def, err := buildOLTRegistry("", "", legacyOK())
+	olts, def, err := BuildOLTRegistry("", "", legacyOK())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -29,7 +29,7 @@ func TestBuildOLTRegistry_Legacy(t *testing.T) {
 func TestBuildOLTRegistry_LegacyMissingHost(t *testing.T) {
 	l := legacyOK()
 	l.Host = ""
-	if _, _, err := buildOLTRegistry("", "", l); err == nil {
+	if _, _, err := BuildOLTRegistry("", "", l); err == nil {
 		t.Fatal("expected error for missing host")
 	}
 }
@@ -39,7 +39,7 @@ func TestBuildOLTRegistry_MultiMixedCards(t *testing.T) {
 		{"id":"c320","host":"10.0.0.1","community":"public","boards":"1,2"},
 		{"id":"c300a","host":"192.0.2.20","port":1161,"community":"public","boards":"3:16,5:8"}
 	]`
-	olts, def, err := buildOLTRegistry(js, "", legacyOK())
+	olts, def, err := BuildOLTRegistry(js, "", legacyOK())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestBuildOLTRegistry_Errors(t *testing.T) {
 	}
 	for name, js := range cases {
 		t.Run(name, func(t *testing.T) {
-			if _, _, err := buildOLTRegistry(js, "", legacyOK()); err == nil {
+			if _, _, err := BuildOLTRegistry(js, "", legacyOK()); err == nil {
 				t.Errorf("expected error for %s", name)
 			}
 		})
@@ -91,11 +91,11 @@ func TestBuildOLTRegistry_Errors(t *testing.T) {
 
 func TestBuildOLTRegistry_DefaultOLT(t *testing.T) {
 	js := `[{"id":"a","host":"h","community":"c"},{"id":"b","host":"h2","community":"c"}]`
-	_, def, err := buildOLTRegistry(js, "b", legacyOK())
+	_, def, err := BuildOLTRegistry(js, "b", legacyOK())
 	if err != nil || def != "b" {
 		t.Fatalf("default override failed: def=%q err=%v", def, err)
 	}
-	if _, _, err := buildOLTRegistry(js, "nope", legacyOK()); err == nil {
+	if _, _, err := BuildOLTRegistry(js, "nope", legacyOK()); err == nil {
 		t.Error("expected error for unknown DEFAULT_OLT")
 	}
 }
@@ -103,7 +103,7 @@ func TestBuildOLTRegistry_DefaultOLT(t *testing.T) {
 func TestBuildOLTRegistry_LegacyDefaultsID(t *testing.T) {
 	l := legacyOK()
 	l.ID = "" // an unnamed legacy OLT must be assigned the id "default"
-	olts, def, err := buildOLTRegistry("", "", l)
+	olts, def, err := BuildOLTRegistry("", "", l)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +116,7 @@ func TestBuildOLTRegistry_MaxConcurrentFallback(t *testing.T) {
 	l := legacyOK()
 	l.MaxConcurrent = 0 // no usable default → oltFromJSON must fall back to 5
 	js := `[{"id":"x","host":"h","community":"c"}]`
-	olts, _, err := buildOLTRegistry(js, "", l)
+	olts, _, err := BuildOLTRegistry(js, "", l)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +127,7 @@ func TestBuildOLTRegistry_MaxConcurrentFallback(t *testing.T) {
 
 func TestBuildOLTRegistry_Defaults(t *testing.T) {
 	js := `[{"id":"x","host":"h","community":"c"}]` // no port/boards/pons/maxConcurrent
-	olts, _, err := buildOLTRegistry(js, "", legacyOK())
+	olts, _, err := BuildOLTRegistry(js, "", legacyOK())
 	if err != nil {
 		t.Fatal(err)
 	}

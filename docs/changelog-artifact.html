@@ -1,0 +1,662 @@
+<title>Dynamic OLT Registry</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --text: #1e293b;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --green: #059669;
+    --green-light: #d1fae5;
+    --amber: #d97706;
+    --amber-light: #fef3c7;
+    --red: #dc2626;
+    --border: #e2e8f0;
+    --border-light: #f1f5f9;
+    --code-bg: #f8fafc;
+    --code-border: #e2e8f0;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --text: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #60a5fa;
+      --accent-light: #1e3a5f;
+      --green: #34d399;
+      --green-light: #064e3b;
+      --amber: #fbbf24;
+      --amber-light: #451a03;
+      --red: #f87171;
+      --border: #334155;
+      --border-light: #1e293b;
+      --code-bg: #0f172a;
+      --code-border: #334155;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --text: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent: #60a5fa;
+    --accent-light: #1e3a5f;
+    --green: #34d399;
+    --green-light: #064e3b;
+    --amber: #fbbf24;
+    --amber-light: #451a03;
+    --red: #f87171;
+    --border: #334155;
+    --border-light: #1e293b;
+    --code-bg: #0f172a;
+    --code-border: #334155;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.7;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  /* Header */
+  .doc-header {
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .doc-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.02em;
+  }
+  .doc-header .subtitle {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin: 0 0 1rem;
+  }
+  .stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .stat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.25rem 0.65rem;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .stat-badge.green { background: var(--green-light); color: var(--green); }
+  .stat-badge.blue { background: var(--accent-light); color: var(--accent); }
+  .stat-badge.amber { background: var(--amber-light); color: var(--amber); }
+
+  /* Sections */
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 1.75rem 0 0.75rem;
+    color: var(--text);
+  }
+  h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 1.25rem 0 0.5rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  p { margin: 0 0 1rem; }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; margin: 1rem 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+  }
+  th {
+    text-align: left;
+    font-weight: 600;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 2px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  td code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+  }
+
+  /* Code blocks */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    margin: 1rem 0;
+  }
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+  }
+  p code, li code {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+  }
+
+  /* Lists */
+  ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+  li { margin-bottom: 0.35rem; }
+  li strong { color: var(--text); }
+
+  /* Architecture diagram */
+  .diagram {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre;
+    margin: 1rem 0;
+    text-align: center;
+  }
+
+  /* File change cards */
+  .file-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin: 0.75rem 0;
+    box-shadow: var(--shadow);
+  }
+  .file-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .file-card-header code {
+    font-weight: 600;
+    font-size: 0.88rem;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+  .file-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .file-badge.new { background: var(--green-light); color: var(--green); }
+  .file-badge.mod { background: var(--accent-light); color: var(--accent); }
+  .file-card p {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+  }
+  .file-card .delta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.35rem;
+  }
+  .delta .add { color: var(--green); font-weight: 500; }
+  .delta .del { color: var(--red); font-weight: 500; }
+
+  /* Test results */
+  .test-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+  .test-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    padding: 0.4rem 0.6rem;
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+  }
+  .test-item .check { color: var(--green); font-weight: 700; flex-shrink: 0; }
+
+  /* Verification block */
+  .verify-block {
+    background: var(--green-light);
+    border: 1px solid var(--green);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+  }
+  .verify-block h4 {
+    color: var(--green);
+    margin: 0 0 0.5rem;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.95rem;
+  }
+  .verify-block p {
+    margin: 0;
+    font-size: 0.88rem;
+  }
+
+  /* Callout */
+  .callout {
+    background: var(--amber-light);
+    border-left: 3px solid var(--amber);
+    border-radius: 0 6px 6px 0;
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    font-size: 0.88rem;
+  }
+  .callout strong { color: var(--amber); }
+
+  /* Section divider */
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2rem 0;
+  }
+
+  /* Footer */
+  .doc-footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    text-align: center;
+  }
+</style>
+
+<div class="doc-header">
+  <h1>Dynamic OLT Registry Refactor</h1>
+  <p class="subtitle">snmp-olt-zte &mdash; Runtime OLT add/remove/update without restart</p>
+  <div class="stats-row">
+    <span class="stat-badge green">20/20 packages pass</span>
+    <span class="stat-badge green">17 new tests</span>
+    <span class="stat-badge blue">9 files &middot; +1341 &minus;114</span>
+    <span class="stat-badge amber">0 breaking changes</span>
+  </div>
+</div>
+
+<h2>Overview</h2>
+<p>
+  Replaced the static OLT configuration model &mdash; where OLTs were loaded once at startup and
+  routes were baked into the chi router at init &mdash; with a fully dynamic registry model.
+  OLTs can now be added, removed, and updated at runtime via the device-registry poller, with
+  zero downtime.
+</p>
+
+<h2>Architecture</h2>
+
+<div class="diagram">          ┌──────────────────────┐
+          │   device-registry    │
+          │  GET /v1/registry/   │
+          │        snmp          │
+          └──────────┬───────────┘
+                     │ poll every 30s
+          ┌──────────▼───────────┐
+          │    StartPoller()     │
+          │  (background goroutine)
+          └──────────┬───────────┘
+                     │ FetchRegistryOLTConfigs → Reconcile()
+          ┌──────────▼───────────┐
+          │     OLTRegistry      │
+          │   sync.RWMutex map   │
+          │  OLT ID → *OLTEntry  │
+          └──────────┬───────────┘
+                     │ Get(oltID) at request time
+  ┌──────────────────▼──────────────────────┐
+  │ chi: /api/v1/olt/{olt_id}/board/...     │
+  │ resolveOLT middleware → context inject   │
+  │ dynamicHandler → method expression call  │
+  └─────────────────────────────────────────┘</div>
+
+<h3>Before vs After</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>Aspect</th><th>Before (Static)</th><th>After (Dynamic)</th></tr>
+  <tr>
+    <td>OLT loading</td>
+    <td>Parsed once at startup from env</td>
+    <td>Parsed at startup + continuous polling</td>
+  </tr>
+  <tr>
+    <td>Route binding</td>
+    <td><code>apiV1Group.Route("/olt/" + olt.ID, ...)</code></td>
+    <td><code>apiV1Group.Route("/olt/{olt_id}", ...)</code></td>
+  </tr>
+  <tr>
+    <td>Adding an OLT</td>
+    <td>Pod restart required</td>
+    <td>Automatic within 30s</td>
+  </tr>
+  <tr>
+    <td>Handler dispatch</td>
+    <td>Closure-captured at startup</td>
+    <td>Resolved from context at request time</td>
+  </tr>
+  <tr>
+    <td>Ownership check</td>
+    <td>Static <code>RequireOLTOwner</code></td>
+    <td>Live from registry entry</td>
+  </tr>
+</table>
+</div>
+
+<h2>Configuration Modes</h2>
+<p>Four modes with strict precedence. All remain backward-compatible.</p>
+
+<div class="table-wrap">
+<table>
+  <tr><th>#</th><th>Mode</th><th>Env Var</th><th>Poller</th><th>Description</th></tr>
+  <tr><td>1</td><td>Inline JSON</td><td><code>OLTS</code></td><td>No</td><td>JSON array directly in env</td></tr>
+  <tr><td>2</td><td>File</td><td><code>OLTS_FILE</code></td><td>No</td><td>Path to JSON file</td></tr>
+  <tr><td>3</td><td>Registry</td><td><code>REGISTRY_URL</code></td><td><strong>Yes</strong></td><td>Fetch at startup + poll every 30s</td></tr>
+  <tr><td>4</td><td>Legacy</td><td><code>SNMP_*</code></td><td>No</td><td>Single-OLT fallback</td></tr>
+</table>
+</div>
+
+<div class="callout">
+  <strong>Edge case:</strong> If both <code>OLTS</code> and <code>REGISTRY_URL</code> are set,
+  the initial load uses <code>OLTS</code> (higher precedence), but the poller starts and
+  overwrites the registry on its first tick (~30s).
+</div>
+
+<h2>New Environment Variables</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>Variable</th><th>Default</th><th>Description</th></tr>
+  <tr>
+    <td><code>REGISTRY_POLL_INTERVAL</code></td>
+    <td><code>30s</code></td>
+    <td>Go duration string. <code>0</code> disables polling (fetch-once-at-startup).</td>
+  </tr>
+</table>
+</div>
+<p>No existing environment variables were changed or removed.</p>
+
+<h2>Files Changed</h2>
+
+<div class="file-card">
+  <div class="file-card-header">
+    <span class="file-badge new">NEW</span>
+    <code>app/registry.go</code>
+  </div>
+  <p>Core <code>OLTRegistry</code> type: thread-safe map with <code>sync.RWMutex</code>,
+    <code>Reconcile()</code> diff engine, <code>StartPoller()</code> goroutine,
+    <code>HealthCheck()</code>, <code>Close()</code>.</p>
+  <div class="delta"><span class="add">+297 lines</span></div>
+</div>
+
+<div class="file-card">
+  <div class="file-card-header">
+    <span class="file-badge new">NEW</span>
+    <code>app/registry_test.go</code>
+  </div>
+  <p>17 tests covering Get, GetDefault, List, Len, Reconcile (5 scenarios),
+    HealthCheck (4 scenarios), Close (2), Poller (2).</p>
+  <div class="delta"><span class="add">+784 lines</span></div>
+</div>
+
+<div class="file-card">
+  <div class="file-card-header">
+    <span class="file-badge mod">MOD</span>
+    <code>app/app.go</code>
+  </div>
+  <p>Replaced static OLT loop with <code>NewOLTRegistry</code> + <code>Reconcile</code> +
+    conditional <code>StartPoller</code>. Simplified health probes to default critical +
+    aggregate optional.</p>
+  <div class="delta"><span class="add">+45</span> / <span class="del">&minus;82</span></div>
+</div>
+
+<div class="file-card">
+  <div class="file-card-header">
+    <span class="file-badge mod">MOD</span>
+    <code>app/routes.go</code>
+  </div>
+  <p>Added <code>loadRoutesWithRegistry</code>, <code>resolveOLT</code>/<code>resolveDefaultOLT</code>
+    middleware, <code>dynamicHandler</code> method-expression wrapper,
+    <code>mountDynamicONURoutes</code>.</p>
+  <div class="delta"><span class="add">+174</span></div>
+</div>
+
+<div class="file-card">
+  <div class="file-card-header">
+    <span class="file-badge mod">MOD</span>
+    <code>config/registry.go</code>
+  </div>
+  <p>Exported <code>FetchRegistryOLTS</code>. Added <code>FetchRegistryOLTConfigs()</code>
+    convenience function (fetch + parse in one call, used by poller).</p>
+  <div class="delta"><span class="add">+20</span> / <span class="del">&minus;11</span></div>
+</div>
+
+<div class="file-card">
+  <div class="file-card-header">
+    <span class="file-badge mod">MOD</span>
+    <code>config/olts.go</code>
+  </div>
+  <p>Export rename: <code>buildOLTRegistry</code> &rarr; <code>BuildOLTRegistry</code>.</p>
+  <div class="delta"><span class="add">+2</span> / <span class="del">&minus;2</span></div>
+</div>
+
+<div class="file-card">
+  <div class="file-card-header">
+    <span class="file-badge mod">MOD</span>
+    <code>config/config.go</code>
+  </div>
+  <p>Updated call site to use exported <code>BuildOLTRegistry</code>.</p>
+  <div class="delta"><span class="add">+1</span> / <span class="del">&minus;1</span></div>
+</div>
+
+<div class="file-card">
+  <div class="file-card-header">
+    <span class="file-badge mod">MOD</span>
+    <code>config/olts_test.go</code> &amp; <code>config/registry_test.go</code>
+  </div>
+  <p>Updated references to exported function names. No logic changes.</p>
+  <div class="delta"><span class="add">+18</span> / <span class="del">&minus;18</span></div>
+</div>
+
+<h2>Reconcile() Diff Engine</h2>
+<p>The core algorithm that makes the registry dynamic. Called at startup and on every poll tick.</p>
+
+<div class="table-wrap">
+<table>
+  <tr><th>Scenario</th><th>Detection</th><th>Action</th></tr>
+  <tr>
+    <td>New OLT</td>
+    <td>ID in incoming but not in current map</td>
+    <td>Create SNMP conn &rarr; repo &rarr; usecase &rarr; handler</td>
+  </tr>
+  <tr>
+    <td>Removed OLT</td>
+    <td>ID in current but not in incoming</td>
+    <td>Close SNMP, delete from map</td>
+  </tr>
+  <tr>
+    <td>Connection change</td>
+    <td><code>oltChangeKey()</code> differs (host|port|community|walk|boards)</td>
+    <td>Remove + add (full SNMP reconnection)</td>
+  </tr>
+  <tr>
+    <td>Metadata change</td>
+    <td>Same connection key, different <code>user_id</code></td>
+    <td>Update fields in-place (no reconnection)</td>
+  </tr>
+  <tr>
+    <td>Unchanged</td>
+    <td>Same connection key, same metadata</td>
+    <td>Skip (no churn)</td>
+  </tr>
+</table>
+</div>
+
+<h4>Change detection key</h4>
+<pre>func oltChangeKey(o config.OLTRuntimeConfig) string {
+    // host|port|community|walk|boards
+    return fmt.Sprintf("%s|%d|%s|%t|%s",
+        o.Host, o.Port, o.Community, o.UseWalk,
+        strings.Join(boards, ","))
+}</pre>
+
+<h4>Safety guarantees</h4>
+<ul>
+  <li><strong>Poll failure</strong> &rarr; log warning, keep current OLTs (never wipe)</li>
+  <li><strong>Empty response</strong> &rarr; log warning, keep current OLTs</li>
+  <li><strong>Failed OLT init</strong> &rarr; log error, skip that OLT, others continue</li>
+  <li><strong>Close()</strong> is idempotent (safe to call multiple times)</li>
+  <li>All map access protected by <code>sync.RWMutex</code></li>
+</ul>
+
+<h2>Test Coverage</h2>
+
+<div class="test-grid">
+  <div class="test-item"><span class="check">ok</span> Get</div>
+  <div class="test-item"><span class="check">ok</span> GetDefault</div>
+  <div class="test-item"><span class="check">ok</span> GetDefault_Fallback</div>
+  <div class="test-item"><span class="check">ok</span> GetDefault_EmptyRegistry</div>
+  <div class="test-item"><span class="check">ok</span> DefaultOLTID</div>
+  <div class="test-item"><span class="check">ok</span> List</div>
+  <div class="test-item"><span class="check">ok</span> Len</div>
+  <div class="test-item"><span class="check">ok</span> Reconcile_RemovesStaleOLTs</div>
+  <div class="test-item"><span class="check">ok</span> Reconcile_EmptyListRemovesAll</div>
+  <div class="test-item"><span class="check">ok</span> Reconcile_UnchangedNotRebuilt</div>
+  <div class="test-item"><span class="check">ok</span> Reconcile_MetadataInPlace</div>
+  <div class="test-item"><span class="check">ok</span> Reconcile_ConnectionRebuild</div>
+  <div class="test-item"><span class="check">ok</span> HealthCheck_AllHealthy</div>
+  <div class="test-item"><span class="check">ok</span> HealthCheck_OneUnhealthy</div>
+  <div class="test-item"><span class="check">ok</span> HealthCheck_ContextCancelled</div>
+  <div class="test-item"><span class="check">ok</span> HealthCheck_EmptyRegistry</div>
+  <div class="test-item"><span class="check">ok</span> Close &amp; Close_Idempotent</div>
+  <div class="test-item"><span class="check">ok</span> Poller_DisabledByZeroInterval</div>
+  <div class="test-item"><span class="check">ok</span> Poller_StopsOnContextCancel</div>
+</div>
+
+<h2>Verification</h2>
+
+<div class="verify-block">
+  <h4>All checks passed</h4>
+  <p>
+    <code>go vet ./...</code> &mdash; clean<br>
+    <code>go build ./...</code> &mdash; clean<br>
+    <code>go test ./... -count=1</code> &mdash; <strong>20/20 packages pass</strong> (including 17 new OLTRegistry tests)
+  </p>
+</div>
+
+<h2>Backward Compatibility</h2>
+
+<div class="table-wrap">
+<table>
+  <tr><th>Feature</th><th>Before</th><th>After</th><th>Breaking?</th></tr>
+  <tr><td><code>OLTS</code> env</td><td>Static load</td><td>Static (no poller)</td><td>No</td></tr>
+  <tr><td><code>OLTS_FILE</code> env</td><td>Static load</td><td>Static (no poller)</td><td>No</td></tr>
+  <tr><td><code>REGISTRY_URL</code> env</td><td>Fetch once</td><td>Fetch + poll 30s</td><td>No</td></tr>
+  <tr><td>Legacy <code>SNMP_*</code></td><td>Single OLT</td><td>Single OLT</td><td>No</td></tr>
+  <tr><td><code>/board/...</code> (bare)</td><td>Default OLT</td><td>Default OLT</td><td>No</td></tr>
+  <tr><td><code>/olt/{id}/board/...</code></td><td>Static routes</td><td>Dynamic lookup</td><td>No</td></tr>
+  <tr><td>Health probes</td><td>One per OLT</td><td>Default + aggregate</td><td>No</td></tr>
+  <tr><td>Trap listener</td><td>Default usecase</td><td>Default usecase</td><td>No</td></tr>
+</table>
+</div>
+
+<h2>Deployment</h2>
+
+<h3>No configuration changes required</h3>
+<p>
+  Existing deployments (k3s ConfigMap, Helm values) continue working without changes.
+  The refactor is purely internal &mdash; HTTP API, env vars, and response format are identical.
+</p>
+
+<h3>Dynamic OLT management (REGISTRY_URL mode)</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>Action</th><th>Result</th><th>Latency</th></tr>
+  <tr><td>Add OLT in device-registry</td><td>Appears in snmp-olt-zte, starts serving</td><td>&le; 30s</td></tr>
+  <tr><td>Remove OLT</td><td>Returns 404, SNMP connection closed</td><td>&le; 30s</td></tr>
+  <tr><td>Change connection params</td><td>SNMP reconnection, new params active</td><td>&le; 30s</td></tr>
+  <tr><td>Change ownership (user_id)</td><td>Updated in-place, no reconnection</td><td>&le; 30s</td></tr>
+</table>
+</div>
+
+<h3>Monitoring</h3>
+<pre>kubectl --context=k3s -n misindo-snmp-olt-zte-prod \
+  logs -f deploy/snmp-olt-zte \
+  | grep -E 'olt_added|olt_removed|olt_updated|registry_poll'</pre>
+
+<h2>Commit Message</h2>
+<pre>refactor(app): dynamic OLT registry with runtime add/remove/update
+
+Replace static per-OLT route loop with thread-safe OLTRegistry that
+resolves OLTs at request time. New OLTs appear, changed OLTs reconnect,
+and removed OLTs clean up — all without a restart.
+
+- app/registry.go: OLTRegistry type with Reconcile() diff engine,
+  StartPoller() background goroutine, HealthCheck(), Close()
+- app/routes.go: resolveOLT/resolveDefaultOLT middleware, dynamicHandler
+  wrapper for method-expression dispatch via context
+- app/app.go: replace static OLT loop with registry + poller wiring
+- config/olts.go: export BuildOLTRegistry for poller use
+- config/registry.go: export FetchRegistryOLTS, add FetchRegistryOLTConfigs
+- 17 new tests covering Get, Reconcile, HealthCheck, Close, Poller</pre>
+
+<div class="doc-footer">
+  snmp-olt-zte &middot; Dynamic OLT Registry Refactor &middot; September 2026
+</div>

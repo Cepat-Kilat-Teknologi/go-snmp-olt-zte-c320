@@ -8,16 +8,13 @@ import (
 	"time"
 
 	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/config"
-	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/internal/handler"
 	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/internal/health"
 	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/internal/repository"
 	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/internal/reqctx"
 	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/internal/trap"
-	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/internal/usecase"
 	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/pkg/graceful"
 	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/pkg/logger"
 	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/pkg/redis"
-	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/pkg/snmp"
 	rds "github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
@@ -65,63 +62,44 @@ func (a *App) Start(ctx context.Context) error {
 
 	redisRepo := repository.NewOnuRedisRepo(redisClient)
 
-	// Build the multi-OLT registry: one SNMP pool + usecase + handler per OLT.
-	// All OLTs share Redis; each usecase namespaces its cache keys by OLT id
-	// (the default OLT keeps unprefixed keys for backward compatibility).
-	type oltStack struct {
-		olt  config.OLTRuntimeConfig
-		uc   usecase.OnuUseCaseInterface
-		repo repository.SnmpRepositoryInterface
-	}
-	var (
-		oltRoutes      []oltRoute
-		stacks         []oltStack
-		defaultUsecase usecase.OnuUseCaseInterface
-	)
+	// Build the dynamic OLT registry. Each OLT gets its own SNMP pool, repo,
+	// usecase and handler; all share Redis. The default OLT keeps unprefixed
+	// cache keys for backward compatibility.
+	reg := NewOLTRegistry(cfg, redisRepo, cfg.DefaultOLT)
+	reg.Reconcile(cfg.OLTs)
+	defer reg.Close()
 
-	for _, olt := range cfg.OLTs {
-		snmpConn, connErr := snmp.SetupSnmpConnectionWith(olt.Host, olt.Port, olt.Community)
-		if connErr != nil {
-			logger.Error("failed to setup snmp connection for olt",
-				zap.String("olt_id", olt.ID), zap.String("host", olt.Host), zap.Error(connErr))
-			continue // skip this OLT; the others still serve
-		}
-		snmpRepo := repository.NewPonRepositoryWithConcurrency(snmpConn, olt.MaxConcurrent, olt.UseWalk)
-		defer snmpRepo.Close()
-
-		cachePrefix := olt.ID
-		if olt.ID == cfg.DefaultOLT {
-			cachePrefix = "" // default OLT -> unprefixed keys (back-compat)
-		}
-		uc := usecase.NewOnuUsecaseForOLT(snmpRepo, redisRepo, cfg.ForOLT(olt), cachePrefix)
-		h := handler.NewOnuHandler(uc)
-
-		oltRoutes = append(oltRoutes, oltRoute{id: olt.ID, userID: olt.UserID, handler: h, boardPons: olt.BoardPons})
-		stacks = append(stacks, oltStack{olt: olt, uc: uc, repo: snmpRepo})
-		if olt.ID == cfg.DefaultOLT {
-			defaultUsecase = uc
-		}
-
-		logger.Info("olt_registered",
-			zap.String("olt_id", olt.ID),
-			zap.String("host", olt.Host),
-			zap.Ints("boards", olt.Boards),
-			zap.Bool("default", olt.ID == cfg.DefaultOLT))
-	}
-
-	if len(stacks) == 0 {
+	if reg.Len() == 0 {
 		return fmt.Errorf("no OLT could be initialized")
 	}
-	if defaultUsecase == nil {
-		defaultUsecase = stacks[0].uc // default OLT failed to init; fall back to first
+
+	// Start the device-registry poller when REGISTRY_URL is set. Static
+	// deployments (OLTS / OLTS_FILE) skip this — the registry stays as-is.
+	if registryURL := os.Getenv("REGISTRY_URL"); registryURL != "" {
+		apiKey := os.Getenv("REGISTRY_API_KEY")
+		pollInterval := defaultPollInterval
+		if v := os.Getenv("REGISTRY_POLL_INTERVAL"); v != "" {
+			if d, err := time.ParseDuration(v); err == nil {
+				pollInterval = d
+			}
+		}
+		pollerCtx, pollerCancel := context.WithCancel(ctx)
+		defer pollerCancel()
+		go reg.StartPoller(pollerCtx, registryURL, apiKey, pollInterval)
 	}
 
-	// Pre-warm cache for every OLT in the background.
+	// Pre-warm cache for every registered OLT in the background.
 	if cfg.CacheCfg.PreWarm {
-		for _, s := range stacks {
-			go s.uc.PreWarmCache(ctx)
+		for _, id := range reg.List() {
+			if e, ok := reg.Get(id); ok {
+				go e.UC.PreWarmCache(ctx)
+			}
 		}
 	}
+
+	// Default OLT usecase — used by the trap listener/batcher/power monitor.
+	defaultEntry, _ := reg.GetDefault()
+	defaultUsecase := defaultEntry.UC
 
 	// Start SNMP Trap listener if enabled.
 	if cfg.TrapCfg.Enabled {
@@ -216,37 +194,28 @@ func (a *App) Start(ctx context.Context) error {
 	}
 
 	// Register dependency probes for /readyz. Redis is critical (5s cache).
-	// Each OLT gets its own SNMP probe (30s cache): the default OLT is critical
-	// (instance not-ready if it's down), secondary OLTs are non-critical so one
-	// unreachable device surfaces as degraded rather than taking the pod down.
+	// The default OLT SNMP probe is critical (pod not-ready if it's down);
+	// an aggregate registry probe is optional so a single secondary OLT
+	// going down surfaces as degraded rather than taking the pod down.
 	checker := health.NewChecker(2 * time.Second)
 	checker.Register("redis", 5*time.Second, func(ctx context.Context) error {
 		return redisClient.Ping(ctx).Err()
 	})
-	for _, s := range stacks {
-		repo := s.repo // capture for the closure
-		probeName := "snmp_" + s.olt.ID
-		// repo.Ping is a synchronous gosnmp call with its own (longer)
-		// timeout+retry budget, so run it under the checker's 2s context —
-		// otherwise one unreachable OLT pins every readyz call for the full
-		// SNMP retry window. An abandoned Ping goroutine just drains on the
-		// SNMP timeout and exits.
-		probe := func(ctx context.Context) error {
-			done := make(chan error, 1)
-			go func() { done <- repo.Ping() }()
-			select {
-			case err := <-done:
-				return err
-			case <-ctx.Done():
-				return ctx.Err()
-			}
+	checker.Register("snmp_default", 30*time.Second, func(ctx context.Context) error {
+		entry, ok := reg.GetDefault()
+		if !ok {
+			return fmt.Errorf("no default OLT registered")
 		}
-		if s.olt.ID == cfg.DefaultOLT {
-			checker.Register(probeName, 30*time.Second, probe)
-		} else {
-			checker.RegisterOptional(probeName, 30*time.Second, probe)
+		done := make(chan error, 1)
+		go func() { done <- entry.Repo.Ping() }()
+		select {
+		case err := <-done:
+			return err
+		case <-ctx.Done():
+			return ctx.Err()
 		}
-	}
+	})
+	checker.RegisterOptional("snmp_olts", 30*time.Second, reg.HealthCheck)
 
 	// Build the api_key -> Principal registry for per-tenant auth (nil when
 	// API_USERS is unset; the legacy single API_KEY then applies).
@@ -258,8 +227,8 @@ func (a *App) Start(ctx context.Context) error {
 		}
 	}
 
-	// Initialize router with the per-OLT handlers and health checker.
-	a.router = loadRoutesMulti(oltRoutes, cfg.DefaultOLT, checker, principals, cfg.APIKey)
+	// Initialize router with the dynamic OLT registry and health checker.
+	a.router = loadRoutesWithRegistry(reg, checker, principals, cfg.APIKey)
 
 	// Start server.
 	addr := os.Getenv("SERVER_PORT")

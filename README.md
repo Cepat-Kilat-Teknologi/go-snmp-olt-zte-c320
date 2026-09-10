@@ -34,10 +34,14 @@ REST API service for monitoring ZTE **C320 and C300** OLT devices via SNMP proto
 ### Key Features
 - **ZTE C320 & C300 in one image** — identical MIB/ifIndex encoding; only the
   populated GPON slots differ (`OLT_BOARDS`, per-slot PON counts `slot:pons`)
-- **Multi-OLT in a single instance** (`OLTS` / `OLTS_FILE` / device-registry):
+- **Multi-OLT in a single instance** (`OLTS` / `OLTS_FILE` / `REGISTRY_URL`):
   any mix of C320/C300, each with its own SNMP pool, slot topology, and
   namespaced Redis cache; per-OLT paths `/api/v1/olt/{id}/...` + per-OLT
   readiness probes
+- **Dynamic OLT registry** (`REGISTRY_URL` mode): OLTs are added, removed,
+  and updated at runtime without a restart. A background poller fetches the
+  OLT list from device-registry every 30s and reconciles the diff — only
+  changed OLTs reconnect, unchanged OLTs keep their live SNMP connections
 - **Per-tenant access control** (`API_USERS`): each API key sees only the OLTs
   it owns (cross-tenant → 404); `role:"admin"` sees all
 - **Uplink/card auto-detect** (`GET /uplinks`): ENTITY-MIB + IF-MIB topology
@@ -133,6 +137,35 @@ OLTS_FILE=/etc/olt/olts.json
 
 Inline `OLTS` wins over `OLTS_FILE`. Loading is **fail-fast**: a set-but-unreadable
 or empty `OLTS_FILE` aborts startup rather than silently falling back to `SNMP_*`.
+
+### Dynamic OLT registry (`REGISTRY_URL`)
+
+Point `REGISTRY_URL` at a [device-registry](https://github.com/Cepat-Kilat-Teknologi/device-registry)
+instance and the service fetches its OLT list over HTTP on startup, then polls
+for changes in the background:
+
+```bash
+REGISTRY_URL=http://device-registry:3050
+REGISTRY_API_KEY=<key>
+REGISTRY_POLL_INTERVAL=30s   # Go duration; 0 disables polling
+```
+
+A background goroutine polls `GET /v1/registry/snmp` every `REGISTRY_POLL_INTERVAL`
+(default 30 s). On each tick, the poller diffs the response against the live
+registry and applies the minimum set of changes:
+
+- **New OLT in response** — SNMP connection opened, handler created, OLT starts
+  serving requests immediately
+- **OLT removed from response** — SNMP connection closed, requests return 404
+- **Connection params changed** (host, port, community, walk, boards) — SNMP
+  reconnected; other OLTs unaffected
+- **Metadata changed** (user_id only) — updated in-place, no reconnection
+
+If a poll fails or returns an empty list, the current OLT set is kept intact.
+The service never wipes its registry on a transient upstream error.
+
+`REGISTRY_URL` has lower precedence than `OLTS` and `OLTS_FILE`. When those are
+set, the initial OLT list comes from them and the poller is not started.
 
 ### Per-tenant access control (`API_USERS`)
 

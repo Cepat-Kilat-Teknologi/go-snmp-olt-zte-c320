@@ -20,17 +20,17 @@ func TestFetchRegistryOLTS(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	js, err := fetchRegistryOLTS(srv.URL, "k")
+	js, err := FetchRegistryOLTS(srv.URL, "k")
 	if err != nil {
 		t.Fatalf("fetch: %v", err)
 	}
-	// The returned string must be a JSON array that buildOLTRegistry can parse.
+	// The returned string must be a JSON array that BuildOLTRegistry can parse.
 	if !strings.HasPrefix(strings.TrimSpace(js), "[") || !strings.Contains(js, "c320-01") {
 		t.Fatalf("unexpected payload: %s", js)
 	}
-	olts, def, err := buildOLTRegistry(js, "", OLTRuntimeConfig{})
+	olts, def, err := BuildOLTRegistry(js, "", OLTRuntimeConfig{})
 	if err != nil {
-		t.Fatalf("buildOLTRegistry on fetched json: %v", err)
+		t.Fatalf("BuildOLTRegistry on fetched json: %v", err)
 	}
 	if len(olts) != 1 || olts[0].ID != "c320-01" || def != "c320-01" {
 		t.Fatalf("registry from fetch wrong: %+v default=%s", olts, def)
@@ -42,7 +42,7 @@ func TestFetchRegistryOLTS_Empty(t *testing.T) {
 		_, _ = w.Write([]byte(`{"code":200,"status":"success","data":[]}`))
 	}))
 	defer srv.Close()
-	js, err := fetchRegistryOLTS(srv.URL, "")
+	js, err := FetchRegistryOLTS(srv.URL, "")
 	if err != nil || js != "" {
 		t.Fatalf("empty inventory should yield \"\": js=%q err=%v", js, err)
 	}
@@ -53,7 +53,7 @@ func TestFetchRegistryOLTS_Non200(t *testing.T) {
 		w.WriteHeader(http.StatusBadGateway)
 	}))
 	defer srv.Close()
-	if _, err := fetchRegistryOLTS(srv.URL, ""); err == nil {
+	if _, err := FetchRegistryOLTS(srv.URL, ""); err == nil {
 		t.Fatal("expected error on non-200")
 	}
 }
@@ -61,7 +61,7 @@ func TestFetchRegistryOLTS_Non200(t *testing.T) {
 // The cold-start race: device-registry is unreachable for the first few attempts,
 // then comes up. The retry wrapper must absorb that and return the inventory
 // rather than failing — the whole point of the v0.5.1 fix.
-func TestFetchRegistryOLTSWithRetry_RecoversAfterRegistryReady(t *testing.T) {
+func Test_fetchRegistryOLTSWithRetry_RecoversAfterRegistryReady(t *testing.T) {
 	var attempts int
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		attempts++
@@ -95,7 +95,7 @@ func TestFetchRegistryOLTSWithRetry_RecoversAfterRegistryReady(t *testing.T) {
 
 // A registry that never recovers must fail fast once the startup window is
 // exhausted — we must never silently boot with wrong/empty config.
-func TestFetchRegistryOLTSWithRetry_GivesUpAfterWindow(t *testing.T) {
+func Test_fetchRegistryOLTSWithRetry_GivesUpAfterWindow(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadGateway)
 	}))
@@ -116,7 +116,7 @@ func TestFetchRegistryOLTSWithRetry_GivesUpAfterWindow(t *testing.T) {
 }
 
 // REGISTRY_STARTUP_TIMEOUT=0 disables retry: a single attempt, fail-fast.
-func TestFetchRegistryOLTSWithRetry_DisabledByZeroTimeout(t *testing.T) {
+func Test_fetchRegistryOLTSWithRetry_DisabledByZeroTimeout(t *testing.T) {
 	var attempts int
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		attempts++
