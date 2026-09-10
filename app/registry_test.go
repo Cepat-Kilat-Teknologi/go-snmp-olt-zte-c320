@@ -457,12 +457,12 @@ func TestLoadRoutesWithRegistry_PerOLTValidation(t *testing.T) {
 	}{
 		{"/api/v1/olt/c320/board/1/pon/1", false},
 		{"/api/v1/olt/c320/board/3/pon/1", true},    // slot 3 not on C320
-		{"/api/v1/olt/c300a/board/3/pon/16", false},  // GTGH (16)
-		{"/api/v1/olt/c300a/board/5/pon/8", false},   // GTGO (8)
-		{"/api/v1/olt/c300a/board/5/pon/9", true},    // only 8 PONs
-		{"/api/v1/olt/c300a/board/1/pon/1", true},    // slot 1 not on c300a
-		{"/api/v1/board/1/pon/1", false},             // bare → default c320
-		{"/api/v1/board/3/pon/1", true},              // bare default c320: slot 3 invalid
+		{"/api/v1/olt/c300a/board/3/pon/16", false}, // GTGH (16)
+		{"/api/v1/olt/c300a/board/5/pon/8", false},  // GTGO (8)
+		{"/api/v1/olt/c300a/board/5/pon/9", true},   // only 8 PONs
+		{"/api/v1/olt/c300a/board/1/pon/1", true},   // slot 1 not on c300a
+		{"/api/v1/board/1/pon/1", false},            // bare → default c320
+		{"/api/v1/board/3/pon/1", true},             // bare default c320: slot 3 invalid
 	}
 	for _, tc := range cases {
 		req := httptest.NewRequest("GET", tc.path, nil)
