@@ -70,12 +70,12 @@ type oltJSON struct {
 // /api/v1/olt/{id}/... and in Redis cache key prefixes).
 var oltIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 
-// buildOLTRegistry constructs the OLT registry. When oltsJSON is non-empty it is
+// BuildOLTRegistry constructs the OLT registry. When oltsJSON is non-empty it is
 // parsed as a JSON array (multi-OLT mode); otherwise a single OLT is synthesized
 // from the supplied legacy descriptor (back-compat with SNMP_* / OLT_BOARDS).
 // It returns the registry, the default OLT id (served by the bare /board routes),
 // and any validation error.
-func buildOLTRegistry(oltsJSON, defaultOLTEnv string, legacy OLTRuntimeConfig) ([]OLTRuntimeConfig, string, error) {
+func BuildOLTRegistry(oltsJSON, defaultOLTEnv string, legacy OLTRuntimeConfig) ([]OLTRuntimeConfig, string, error) {
 	var olts []OLTRuntimeConfig
 
 	if oltsJSON == "" {

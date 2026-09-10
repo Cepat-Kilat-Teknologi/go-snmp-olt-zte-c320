@@ -359,7 +359,7 @@ func LoadConfig() (*Config, error) {
 			}
 		}
 	}
-	olts, defaultOLT, err := buildOLTRegistry(oltsJSON, getEnv("DEFAULT_OLT", ""), legacy)
+	olts, defaultOLT, err := BuildOLTRegistry(oltsJSON, getEnv("DEFAULT_OLT", ""), legacy)
 	if err != nil {
 		return nil, err
 	}

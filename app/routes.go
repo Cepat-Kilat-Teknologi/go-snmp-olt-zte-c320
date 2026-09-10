@@ -1,16 +1,19 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/internal/buildinfo"
+	apperrors "github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/internal/errors"
 	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/internal/handler"
 	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/internal/health"
 	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/internal/middleware"
 	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/internal/reqctx"
+	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/internal/utils"
 	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/pkg/metrics"
 	"github.com/Cepat-Kilat-Teknologi/snmp-olt-zte/pkg/snmp"
 	"github.com/go-chi/chi/v5"
@@ -159,6 +162,177 @@ func mountONURoutes(router chi.Router, onuHandler *handler.OnuHandler, validateB
 		r.Route("/board/{board_id}/pon/{pon_id}", func(r chi.Router) {
 			r.Use(validateBoardPon)
 			r.Get("/", onuHandler.GetByBoardIDAndPonIDWithPaginate)
+		})
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Dynamic OLT routing — registry-backed resolution at request time
+// ---------------------------------------------------------------------------
+
+// oltEntryKeyType is the unexported context key for the resolved OLTEntry.
+type oltEntryKeyType struct{}
+
+// oltEntryCtxKey is the context key used to store/retrieve the resolved *OLTEntry.
+var oltEntryCtxKey = oltEntryKeyType{}
+
+// OLTEntryFromContext returns the OLTEntry placed in context by resolveOLT /
+// resolveDefaultOLT. Panics if absent (only called inside routes that are
+// guaranteed to have the middleware).
+func OLTEntryFromContext(ctx context.Context) *OLTEntry {
+	return ctx.Value(oltEntryCtxKey).(*OLTEntry)
+}
+
+// loadRoutesWithRegistry is the dynamic counterpart of loadRoutesMulti. Instead
+// of a static []oltRoute it takes the live *OLTRegistry. OLT resolution moves
+// from route setup time to request time, so new OLTs are served immediately
+// after the poller reconciles them — no restart needed.
+func loadRoutesWithRegistry(reg *OLTRegistry, checker *health.Checker, users map[string]reqctx.Principal, legacyKey string) http.Handler {
+	router := chi.NewRouter()
+
+	// ── Global middleware (identical to loadRoutesMulti) ──
+	router.Use(middleware.RequestID)
+	router.Use(middleware.APIVersionHeader(middleware.DefaultAPIVersionConfig(
+		buildinfo.APIVersion, buildinfo.Version, buildinfo.Commit,
+	)))
+	router.Use(middleware.SecurityHeaders)
+	router.Use(middleware.RequestTimeout(90 * time.Second))
+	router.Use(middleware.RateLimiter(100, 200))
+	router.Use(middleware.MaxBodySize(1 << 20))
+	router.Use(metrics.Middleware())
+	router.Use(middleware.Logger())
+	router.Use(middleware.AuditLog())
+	router.Use(middleware.CorsMiddleware())
+
+	// ── Unauthenticated endpoints ──
+	router.Get("/", rootHandler)
+	router.Get("/health", healthHandler)
+	router.Get("/healthz", healthzHandler)
+	router.Get("/readyz", makeReadyzHandler(checker))
+	router.Get("/version", versionHandler)
+	router.Handle("/metrics", metrics.Handler())
+
+	// ── /api/v1 group (authenticated) ──
+	apiV1Group := chi.NewRouter()
+	apiV1Group.Use(middleware.Authenticator(users, legacyKey))
+
+	apiV1Group.Post("/test", snmpTestHandler)
+	apiV1Group.Post("/webhook/test", webhookTestHandler)
+	apiV1Group.Post("/webhook/notify", webhookNotifyHandler)
+
+	// Dynamic per-OLT routes: /olt/{olt_id}/board/...
+	apiV1Group.Route("/olt/{olt_id}", func(r chi.Router) {
+		r.Use(resolveOLT(reg))
+		mountDynamicONURoutes(r)
+	})
+
+	// Default OLT bare routes: /board/... (back-compat)
+	apiV1Group.Group(func(r chi.Router) {
+		r.Use(resolveDefaultOLT(reg))
+		mountDynamicONURoutes(r)
+	})
+
+	router.Mount("/api/v1", apiV1Group)
+	return router
+}
+
+// resolveOLT is chi middleware that reads the {olt_id} URL param, looks the OLT
+// up in the live registry, enforces per-tenant ownership, and stores the
+// *OLTEntry in context for downstream handlers and validators.
+func resolveOLT(reg *OLTRegistry) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			oltID := chi.URLParam(r, "olt_id")
+			entry, ok := reg.Get(oltID)
+			if !ok {
+				utils.ErrorNotFound(w, r, apperrors.NewNotFoundError("olt", oltID))
+				return
+			}
+			// Ownership check — mirrors RequireOLTOwner but reads userID from
+			// the live entry instead of a closure-captured constant.
+			p, hasPrincipal := reqctx.PrincipalFromContext(r.Context())
+			if hasPrincipal && !p.Admin && p.UserID != entry.UserID {
+				utils.ErrorNotFound(w, r, apperrors.NewNotFoundError("olt", oltID))
+				return
+			}
+			ctx := context.WithValue(r.Context(), oltEntryCtxKey, entry)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+// resolveDefaultOLT is chi middleware for the bare /board/... routes (backward
+// compatibility). It resolves the registry's default OLT and stores it in
+// context, applying the same ownership check as resolveOLT.
+func resolveDefaultOLT(reg *OLTRegistry) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			entry, ok := reg.GetDefault()
+			if !ok {
+				utils.ErrorNotFound(w, r, apperrors.NewNotFoundError("olt", ""))
+				return
+			}
+			p, hasPrincipal := reqctx.PrincipalFromContext(r.Context())
+			if hasPrincipal && !p.Admin && p.UserID != entry.UserID {
+				utils.ErrorNotFound(w, r, apperrors.NewNotFoundError("olt", ""))
+				return
+			}
+			ctx := context.WithValue(r.Context(), oltEntryCtxKey, entry)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+// dynamicValidateBoardPon reads the resolved OLTEntry from context and
+// validates the {board_id}/{pon_id} URL params against its BoardPons map.
+// It delegates to the standard ValidateBoardPonParams middleware so validation
+// logic stays in one place.
+func dynamicValidateBoardPon(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		entry := OLTEntryFromContext(r.Context())
+		middleware.ValidateBoardPonParams(entry.BoardPons)(next).ServeHTTP(w, r)
+	})
+}
+
+// dynamicHandler wraps an OnuHandler method expression, resolving the handler
+// from the OLTEntry stored in context by resolveOLT / resolveDefaultOLT.
+// Usage: dynamicHandler((*handler.OnuHandler).GetByBoardIDAndPonID)
+func dynamicHandler(method func(*handler.OnuHandler, http.ResponseWriter, *http.Request)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		entry := OLTEntryFromContext(r.Context())
+		method(entry.Handler, w, r)
+	}
+}
+
+// mountDynamicONURoutes is the dynamic counterpart of mountONURoutes. The route
+// tree is identical, but every handler reads the *OLTEntry from context (set by
+// resolveOLT/resolveDefaultOLT) instead of being bound to a specific handler at
+// startup. Board/pon validation also resolves dynamically.
+func mountDynamicONURoutes(router chi.Router) {
+	router.Get("/uplinks", dynamicHandler((*handler.OnuHandler).GetUplinkTopology))
+
+	router.Route("/board", func(r chi.Router) {
+		r.Route("/{board_id}/pon/{pon_id}", func(r chi.Router) {
+			r.Use(dynamicValidateBoardPon)
+
+			r.Get("/", dynamicHandler((*handler.OnuHandler).GetByBoardIDAndPonID))
+			r.Delete("/cache/clear", dynamicHandler((*handler.OnuHandler).DeleteCache))
+			r.Get("/onu_id/empty", dynamicHandler((*handler.OnuHandler).GetEmptyOnuID))
+			r.Get("/onu_id_sn", dynamicHandler((*handler.OnuHandler).GetOnuIDAndSerialNumber))
+			r.Post("/onu_id/update", dynamicHandler((*handler.OnuHandler).UpdateEmptyOnuID))
+
+			r.Route("/onu/{onu_id}", func(r chi.Router) {
+				r.Use(middleware.ValidateOnuIDParam)
+				r.Get("/", dynamicHandler((*handler.OnuHandler).GetByBoardIDPonIDAndOnuID))
+				r.Delete("/cache/clear", dynamicHandler((*handler.OnuHandler).InvalidateOnuCache))
+			})
+		})
+	})
+
+	router.Route("/paginate", func(r chi.Router) {
+		r.Route("/board/{board_id}/pon/{pon_id}", func(r chi.Router) {
+			r.Use(dynamicValidateBoardPon)
+			r.Get("/", dynamicHandler((*handler.OnuHandler).GetByBoardIDAndPonIDWithPaginate))
 		})
 	})
 }

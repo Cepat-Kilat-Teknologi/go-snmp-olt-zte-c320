@@ -54,7 +54,7 @@ func fetchRegistryOLTSWithRetry(baseURL, apiKey string) (string, error) {
 	backoff := initialBackoff
 	var lastErr error
 	for {
-		olts, err := fetchRegistryOLTS(baseURL, apiKey)
+		olts, err := FetchRegistryOLTS(baseURL, apiKey)
 		if err == nil {
 			return olts, nil
 		}
@@ -73,13 +73,12 @@ func fetchRegistryOLTSWithRetry(baseURL, apiKey string) (string, error) {
 	}
 }
 
-// fetchRegistryOLTS GETs the SNMP-scoped OLT view from device-registry
+// FetchRegistryOLTS GETs the SNMP-scoped OLT view from device-registry
 // (/v1/registry/snmp) and returns it as an OLTS JSON array string, ready for
-// buildOLTRegistry. The view shape matches oltJSON exactly. An empty inventory
+// BuildOLTRegistry. The view shape matches oltJSON exactly. An empty inventory
 // returns "" so the caller falls back to legacy mode. This makes device-registry
-// the single source of truth — no OLTS_FILE to edit when adding an OLT (a
-// snmp-olt-zte restart picks up the new device).
-func fetchRegistryOLTS(baseURL, apiKey string) (string, error) {
+// the single source of truth — no OLTS_FILE to edit when adding an OLT.
+func FetchRegistryOLTS(baseURL, apiKey string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -125,6 +124,26 @@ type WebhookRemote struct {
 	Enabled bool   `json:"enabled"`
 	Retries int    `json:"retries"`
 	Timeout int    `json:"timeout"`
+}
+
+// FetchRegistryOLTConfigs fetches OLTs from device-registry and parses them into
+// ready-to-use OLTRuntimeConfig entries. It is the single call the runtime poller
+// needs: fetch JSON → parse → validate → return typed configs. Returns nil (not an
+// error) when the registry is empty, so the caller can distinguish "no OLTs" from
+// "registry unreachable".
+func FetchRegistryOLTConfigs(baseURL, apiKey string) ([]OLTRuntimeConfig, error) {
+	js, err := FetchRegistryOLTS(baseURL, apiKey)
+	if err != nil {
+		return nil, err
+	}
+	if js == "" {
+		return nil, nil // empty registry
+	}
+	olts, _, err := BuildOLTRegistry(js, "", OLTRuntimeConfig{})
+	if err != nil {
+		return nil, fmt.Errorf("parse registry OLTs: %w", err)
+	}
+	return olts, nil
 }
 
 // FetchWebhookConfig GETs the global webhook config from device-registry.
