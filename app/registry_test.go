@@ -264,6 +264,30 @@ func TestOLTRegistry_Reconcile_ConnectionChangeTriggersRebuild(t *testing.T) {
 	}
 }
 
+func TestOLTRegistry_Reconcile_UpdateFailureKeepsEntryRemoved(t *testing.T) {
+	oldRepo := &mockSnmpRepo{}
+	e := testOLTEntry("c320", "10.0.0.1", 1, map[int]int{1: 16})
+	e.Repo = oldRepo
+	reg := testRegistry("c320", e)
+
+	// Change community to "" — oltChangeKey differs (triggers update path) AND
+	// SetupSnmpConnectionWith rejects empty community, so addOLTLocked fails.
+	reg.Reconcile([]config.OLTRuntimeConfig{
+		{ID: "c320", Host: "10.0.0.1", Port: 161, Community: "", BoardPons: map[int]int{1: 16}},
+	})
+
+	if !oldRepo.closed {
+		t.Fatal("old repo should be closed on connection-param change")
+	}
+	// addOLTLocked failed → entry should NOT exist.
+	if _, ok := reg.Get("c320"); ok {
+		t.Fatal("c320 should NOT be re-added when addOLTLocked fails")
+	}
+	if reg.Len() != 0 {
+		t.Fatalf("expected empty registry after failed update, got %d entries", reg.Len())
+	}
+}
+
 // ===================================================================
 // oltChangeKey
 // ===================================================================
@@ -780,5 +804,198 @@ func Test_testOLTEntry(t *testing.T) {
 	}
 	if fmt.Sprintf("%v", e.BoardPons) != "map[1:16]" {
 		t.Fatalf("BoardPons wrong: %v", e.BoardPons)
+	}
+}
+
+// ===================================================================
+// StartPoller — HTTP-level integration tests with httptest.Server
+// ===================================================================
+
+// registryResponse is the JSON envelope device-registry returns.
+const registryValidResponse = `{"code":200,"status":"success","data":[
+	{"id":"poller-olt","user_id":1,"host":"10.99.0.1","port":161,"community":"public","boards":"1,2"}
+]}`
+
+const registryEmptyResponse = `{"code":200,"status":"success","data":[]}`
+
+func TestOLTRegistry_StartPoller_FetchSuccessReconciles(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/registry/snmp" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(registryValidResponse))
+	}))
+	defer srv.Close()
+
+	reg := NewOLTRegistry(&config.Config{}, nil, "poller-olt")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		reg.StartPoller(ctx, srv.URL, "", 10*time.Millisecond)
+		close(done)
+	}()
+
+	// Wait for at least one tick to fire and reconcile.
+	deadline := time.After(3 * time.Second)
+	for {
+		if reg.Len() > 0 {
+			break
+		}
+		select {
+		case <-deadline:
+			cancel()
+			t.Fatal("poller did not reconcile within deadline")
+			return
+		default:
+			time.Sleep(5 * time.Millisecond)
+		}
+	}
+
+	entry, ok := reg.Get("poller-olt")
+	if !ok {
+		cancel()
+		t.Fatal("expected poller-olt entry after reconcile")
+	}
+	if entry.OLT.Host != "10.99.0.1" {
+		t.Fatalf("expected host 10.99.0.1, got %s", entry.OLT.Host)
+	}
+
+	cancel()
+	<-done
+
+	// Clean up SNMP connections opened by reconcile.
+	reg.Close()
+}
+
+func TestOLTRegistry_StartPoller_FetchFailureKeepsCurrent(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+	}))
+	defer srv.Close()
+
+	// Pre-populate with an existing OLT.
+	reg := testRegistry("c320",
+		testOLTEntry("c320", "10.0.0.1", 1, map[int]int{1: 16}),
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		reg.StartPoller(ctx, srv.URL, "", 10*time.Millisecond)
+		close(done)
+	}()
+
+	// Let the poller tick a few times (all will fail with 502).
+	time.Sleep(80 * time.Millisecond)
+	cancel()
+	<-done
+
+	// The registry should still have the original OLT — failures never wipe.
+	if reg.Len() != 1 {
+		t.Fatalf("expected 1 OLT preserved after fetch failure, got %d", reg.Len())
+	}
+	if _, ok := reg.Get("c320"); !ok {
+		t.Fatal("c320 should still be present after fetch failure")
+	}
+}
+
+func TestOLTRegistry_StartPoller_EmptyResponseKeepsCurrent(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/registry/snmp" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(registryEmptyResponse))
+	}))
+	defer srv.Close()
+
+	// Pre-populate with an existing OLT.
+	reg := testRegistry("c320",
+		testOLTEntry("c320", "10.0.0.1", 1, map[int]int{1: 16}),
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		reg.StartPoller(ctx, srv.URL, "", 10*time.Millisecond)
+		close(done)
+	}()
+
+	// Let the poller tick a few times (all return empty data → nil olts).
+	time.Sleep(80 * time.Millisecond)
+	cancel()
+	<-done
+
+	// Empty registry response should not wipe existing OLTs.
+	if reg.Len() != 1 {
+		t.Fatalf("expected 1 OLT preserved after empty response, got %d", reg.Len())
+	}
+	if _, ok := reg.Get("c320"); !ok {
+		t.Fatal("c320 should still be present after empty response")
+	}
+}
+
+// ===================================================================
+// resolveDefaultOLT — missing-default branch
+// ===================================================================
+
+// TestResolveDefaultOLT_EmptyRegistry verifies that bare /board routes return
+// 404 when the registry has no OLTs (no default to resolve).
+func TestResolveDefaultOLT_EmptyRegistry(t *testing.T) {
+	t.Setenv("API_KEY", "")
+	reg := testRegistry("c320") // no entries
+	router := loadRoutesWithRegistry(reg, nil, nil, "")
+
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, httptest.NewRequest("GET", "/api/v1/board/1/pon/1", nil))
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("bare route with empty registry: status=%d, want 404", rr.Code)
+	}
+}
+
+// TestResolveDefaultOLT_OwnershipDenied verifies that a non-admin, non-owner
+// principal hitting the bare /board routes gets 404 (not the default OLT data).
+func TestResolveDefaultOLT_OwnershipDenied(t *testing.T) {
+	uc := okUsecase{&mockOnuUsecase{}}
+	entry := &OLTEntry{
+		OLT:       config.OLTRuntimeConfig{ID: "c320", Host: "10.0.0.1", Port: 161, Community: "pub", UserID: 100, BoardPons: map[int]int{1: 16}},
+		Repo:      &mockSnmpRepo{},
+		UC:        uc,
+		Handler:   handler.NewOnuHandler(uc),
+		BoardPons: map[int]int{1: 16},
+		UserID:    100,
+	}
+	reg := testRegistry("c320", entry)
+
+	users := map[string]reqctx.Principal{
+		"ownerKey":   {UserID: 100},
+		"foreignKey": {UserID: 999},
+		"adminKey":   {Admin: true},
+	}
+	router := loadRoutesWithRegistry(reg, nil, users, "")
+
+	cases := []struct {
+		name string
+		key  string
+		want int
+	}{
+		{"owner sees default", "ownerKey", http.StatusOK},
+		{"foreign user denied", "foreignKey", http.StatusNotFound},
+		{"admin sees default", "adminKey", http.StatusOK},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/api/v1/board/1/pon/1", nil)
+			req.Header.Set("X-API-Key", tc.key)
+			rr := httptest.NewRecorder()
+			router.ServeHTTP(rr, req)
+			if rr.Code != tc.want {
+				t.Errorf("key=%s: status=%d, want %d", tc.key, rr.Code, tc.want)
+			}
+		})
 	}
 }
